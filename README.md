@@ -1,2 +1,2 @@
-# pickly
+# Wantlist
 Lista de desejos universal.
