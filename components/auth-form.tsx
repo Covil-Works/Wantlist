@@ -5,6 +5,7 @@ import { useState } from "react";
 import { createUserWithEmailAndPassword, sendPasswordResetEmail, signInWithEmailAndPassword } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { auth } from "@/lib/firebase-client";
+import { api } from "@/lib/client-api";
 
 export function AuthForm({ mode }: { mode: "login" | "signup" | "reset" }) {
   const [email, setEmail] = useState("");
@@ -21,9 +22,14 @@ export function AuthForm({ mode }: { mode: "login" | "signup" | "reset" }) {
         setMessage("Enviamos as instrucoes de recuperacao.");
         return;
       }
-      if (mode === "signup") await createUserWithEmailAndPassword(auth, email, password);
-      else await signInWithEmailAndPassword(auth, email, password);
-      router.push("/onboarding");
+      if (mode === "signup") {
+        await createUserWithEmailAndPassword(auth, email, password);
+        router.push("/onboarding");
+        return;
+      }
+      await signInWithEmailAndPassword(auth, email, password);
+      const { profile } = await api("/api/profile");
+      router.push(profile ? "/painel" : "/onboarding");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Falha na autenticacao.");
     }
