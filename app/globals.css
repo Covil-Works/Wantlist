@@ -62,3 +62,16 @@ button, input, textarea, select { font: inherit; }
   .hero h1 { font-size: 40px; }
   .topbar-inner, .spread { align-items: flex-start; flex-direction: column; }
 }
+
+.showcase { position: relative; aspect-ratio: 4 / 3; min-height: 320px; overflow: hidden; border-radius: 12px; background: var(--surface); }
+.showcase-images { position: absolute; inset: 0; }
+.showcase-image { object-fit: cover; opacity: 0; transform: scale(1.015); transition: opacity 240ms ease-out, transform 4s ease-out; }
+.showcase-image.active { opacity: 1; transform: scale(1); }
+.showcase-empty { height: 100%; display: grid; place-content: center; justify-items: center; gap: 14px; color: var(--primary); }
+.showcase-empty span { color: var(--muted); font-weight: 650; }
+.showcase-dots { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); display: flex; gap: 6px; padding: 6px 8px; border-radius: 999px; background: color-mix(in oklch, var(--ink), transparent 45%); }
+.showcase-dots span { width: 6px; height: 6px; border-radius: 999px; background: color-mix(in oklch, white, transparent 55%); transition: width 180ms ease-out, background 180ms ease-out; }
+.showcase-dots span.active { width: 18px; background: white; }
+@media (prefers-reduced-motion: reduce) {
+  .showcase-image, .showcase-dots span { transition: opacity 180ms ease-out; transform: none; }
+}
