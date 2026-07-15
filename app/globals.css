@@ -71,6 +71,23 @@ button, input, textarea, select { font: inherit; }
 .item-row-copy span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
 .item-status { justify-self: end; white-space: nowrap; }
 .item-row-actions { display: flex; justify-content: flex-end; align-items: center; gap: 8px; }
+.form-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; }
+.form-heading h2 { margin: 0 0 4px; font-size: 20px; line-height: 1.2; }
+.form-heading p { margin: 0; }
+.item-form { background: var(--surface); }
+.add-item-inline { justify-self: start; }
+.menu-wrap { position: relative; }
+.dropdown-menu { position: absolute; top: calc(100% + 8px); right: 0; z-index: 20; width: min(320px, calc(100vw - 32px)); display: grid; gap: 8px; padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); box-shadow: 0 8px 18px color-mix(in oklch, var(--ink), transparent 88%); }
+.visibility-menu > strong { font-size: 13px; }
+.menu-option { width: 100%; border: 0; border-radius: 8px; background: transparent; color: var(--ink); padding: 10px; display: grid; grid-template-columns: 20px 1fr; gap: 10px; align-items: center; text-align: left; cursor: pointer; }
+.menu-option:hover { background: var(--surface); }
+.menu-option:disabled { cursor: default; background: var(--surface-2); }
+.menu-option span { display: grid; gap: 3px; }
+.menu-option small { color: var(--muted); font-size: 12px; line-height: 1.35; }
+.modal-backdrop { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; padding: 18px; background: color-mix(in oklch, var(--ink), transparent 62%); }
+.modal-panel { width: min(520px, 100%); border: 1px solid var(--line); border-radius: 8px; background: var(--bg); padding: 18px; }
+.fab-add { display: none; position: fixed; right: 18px; bottom: 18px; z-index: 25; width: 56px; height: 56px; border: 0; border-radius: 999px; background: var(--primary); color: white; box-shadow: 0 8px 18px color-mix(in oklch, var(--primary), transparent 68%); cursor: pointer; place-items: center; }
+.fab-add:hover { background: var(--primary-hover); }
 .empty { border: 1px dashed var(--line); border-radius: 8px; padding: 28px; background: var(--surface); color: var(--muted); }
 .error { color: var(--danger); font-weight: 650; }
 .success { color: var(--success); font-weight: 650; }
@@ -81,13 +98,15 @@ button, input, textarea, select { font: inherit; }
   .wishlist-header { display: grid; }
   .wishlist-header h1 { font-size: 28px; }
   .wishlist-actions { justify-content: flex-start; max-width: none; }
+  .add-item-inline { display: none; }
+  .fab-add { display: grid; }
+  .dropdown-menu { left: 0; right: auto; }
   .item-row { grid-template-columns: 58px minmax(0, 1fr) auto; gap: 10px; }
   .item-row-image { width: 58px; height: 58px; }
   .item-row-copy strong { max-width: 28ch; }
   .item-row-actions { grid-column: 2 / -1; justify-content: flex-start; }
   .item-status { font-size: 11px; padding: 4px 7px; }
 }
-
 .showcase { position: relative; height: 430px; overflow: hidden; border-radius: 12px; background: var(--surface); }
 .showcase::before, .showcase::after { content: ""; position: absolute; z-index: 1; left: 0; right: 0; height: 64px; pointer-events: none; }
 .showcase::before { top: 0; background: linear-gradient(to bottom, var(--surface), transparent); }
@@ -110,4 +129,3 @@ button, input, textarea, select { font: inherit; }
   .showcase-track { animation: none; }
   .showcase-track .showcase-set:last-child { display: none; }
 }
-
