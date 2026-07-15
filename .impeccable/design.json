@@ -1,0 +1,126 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-15T00:00:00-03:00",
+  "title": "Design System: Wantlist",
+  "extensions": {
+    "colorMeta": {
+      "social-blue": {
+        "role": "primary",
+        "displayName": "Social Blue",
+        "canonical": "#0F61C7",
+        "tonalRamp": ["oklch(18% 0.08 260)", "oklch(30% 0.13 260)", "oklch(43% 0.18 260)", "oklch(55% 0.2 260)", "oklch(68% 0.16 260)", "oklch(80% 0.11 260)", "oklch(90% 0.06 260)", "oklch(96% 0.03 260)"]
+      },
+      "mint-paper": {
+        "role": "secondary",
+        "displayName": "Mint Paper",
+        "canonical": "#BCF8EC",
+        "tonalRamp": ["oklch(20% 0.05 180)", "oklch(34% 0.07 180)", "oklch(48% 0.08 180)", "oklch(62% 0.08 180)", "oklch(76% 0.07 180)", "oklch(86% 0.055 180)", "oklch(92% 0.04 180)", "oklch(97% 0.025 180)"]
+      },
+      "signal-yellow": {
+        "role": "tertiary",
+        "displayName": "Signal Yellow",
+        "canonical": "#FFF453",
+        "tonalRamp": ["oklch(22% 0.05 100)", "oklch(38% 0.08 100)", "oklch(54% 0.1 100)", "oklch(70% 0.12 100)", "oklch(82% 0.13 100)", "oklch(90% 0.12 100)", "oklch(95% 0.09 100)", "oklch(98% 0.05 100)"]
+      },
+      "soft-sky": {
+        "role": "neutral",
+        "displayName": "Soft Sky",
+        "canonical": "#AED9E0",
+        "tonalRamp": ["oklch(20% 0.04 210)", "oklch(34% 0.05 210)", "oklch(48% 0.055 210)", "oklch(62% 0.05 210)", "oklch(74% 0.045 210)", "oklch(84% 0.035 210)", "oklch(91% 0.025 210)", "oklch(96% 0.015 210)"]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Home hero and major entry statements only." },
+      "headline": { "displayName": "Headline", "purpose": "Page titles and primary product headings." },
+      "title": { "displayName": "Title", "purpose": "Panel headers, item names, and compact section labels." },
+      "body": { "displayName": "Body", "purpose": "Readable interface copy and helper text." },
+      "label": { "displayName": "Label", "purpose": "Forms, badges, compact metadata, and controls." }
+    },
+    "shadows": [
+      { "name": "none-at-rest", "value": "none", "purpose": "Default depth model for panels, cards, item rows, buttons, and fields." },
+      { "name": "interactive-lift", "value": "0 2px 8px rgba(16, 32, 51, 0.08)", "purpose": "Optional focus or temporary overlay lift only." }
+    ],
+    "motion": [
+      { "name": "state-fast", "value": "150ms ease-out", "purpose": "Hover, focus, copied, and selected state transitions." },
+      { "name": "showcase-scroll", "value": "26s linear", "purpose": "Product showcase preview only; replaced by manual scrolling with reduced motion." }
+    ],
+    "breakpoints": [
+      { "name": "mobile", "value": "760px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The main action in a local area: create, save, reserve, or open an important flow.",
+      "html": "<button class=\"ds-button-primary\">Criar wishlist</button>",
+      "css": ".ds-button-primary { min-height: 40px; padding: 9px 14px; border: 1px solid #0F61C7; border-radius: 8px; background: #0F61C7; color: #FFFFFF; font: 650 16px/1.2 Poppins, ui-sans-serif, system-ui, sans-serif; cursor: pointer; transition: background-color 150ms ease-out, border-color 150ms ease-out; } .ds-button-primary:hover { background: #0C4FA3; border-color: #0C4FA3; } .ds-button-primary:focus-visible { outline: 3px solid rgba(15, 97, 199, 0.28); outline-offset: 2px; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "A supporting action that stays familiar and low-noise.",
+      "html": "<button class=\"ds-button-secondary\">Entrar</button>",
+      "css": ".ds-button-secondary { min-height: 40px; padding: 9px 14px; border: 1px solid #8BBCC8; border-radius: 8px; background: #FFFFFF; color: #102033; font: 650 16px/1.2 Poppins, ui-sans-serif, system-ui, sans-serif; cursor: pointer; transition: background-color 150ms ease-out, border-color 150ms ease-out; } .ds-button-secondary:hover { background: #AED9E0; } .ds-button-secondary:focus-visible { outline: 3px solid rgba(15, 97, 199, 0.22); outline-offset: 2px; }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input-field",
+      "description": "Standard product field for URLs, names, settings, and auth forms.",
+      "html": "<label class=\"ds-field\"><span>URL do produto</span><input class=\"ds-input\" placeholder=\"https://loja.com/produto\" /></label>",
+      "css": ".ds-field { display: grid; gap: 7px; color: #102033; font-family: Poppins, ui-sans-serif, system-ui, sans-serif; } .ds-field span { font-size: 13px; line-height: 1.2; font-weight: 700; } .ds-input { width: 100%; border: 1px solid #8BBCC8; border-radius: 8px; padding: 11px 12px; background: #FFFFFF; color: #102033; font: 400 16px/1.2 Poppins, ui-sans-serif, system-ui, sans-serif; } .ds-input::placeholder { color: #46606A; } .ds-input:focus { outline: 3px solid rgba(15, 97, 199, 0.22); border-color: #0F61C7; }"
+    },
+    {
+      "name": "Status Badges",
+      "kind": "chip",
+      "refersTo": "badge-available",
+      "description": "Reservation and visibility state labels that pair text with color.",
+      "html": "<div class=\"ds-badges\"><span class=\"ds-badge ds-badge-available\">Disponivel</span><span class=\"ds-badge ds-badge-reserved\">Reservado</span></div>",
+      "css": ".ds-badges { display: flex; gap: 8px; flex-wrap: wrap; font-family: Poppins, ui-sans-serif, system-ui, sans-serif; } .ds-badge { display: inline-flex; align-items: center; border-radius: 999px; padding: 5px 9px; font-size: 12px; line-height: 1.2; font-weight: 750; } .ds-badge-available { background: #BCF8EC; color: #102033; } .ds-badge-reserved { background: #0F61C7; color: #FFFFFF; }"
+    },
+    {
+      "name": "Wishlist Item Row",
+      "kind": "card",
+      "refersTo": "wishlist-item-row",
+      "description": "Dense, scannable item row for public and owner wishlist views.",
+      "html": "<article class=\"ds-item-row\"><div class=\"ds-thumb\"></div><div class=\"ds-item-copy\"><strong>Fone Bluetooth JBL</strong><span>loja.com</span></div><span class=\"ds-badge ds-badge-available\">Disponivel</span><button class=\"ds-button-primary\">Reservar</button></article>",
+      "css": ".ds-item-row { display: grid; grid-template-columns: 72px minmax(0, 1fr) auto auto; gap: 14px; align-items: center; border: 1px solid #8BBCC8; border-radius: 8px; background: #FFFFFF; padding: 10px; color: #102033; font-family: Poppins, ui-sans-serif, system-ui, sans-serif; } .ds-thumb { width: 72px; height: 72px; border-radius: 8px; background: #AED9E0; } .ds-item-copy { min-width: 0; display: grid; gap: 5px; } .ds-item-copy strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 16px; line-height: 1.25; } .ds-item-copy span { color: #46606A; font-size: 13px; } .ds-badge { border-radius: 999px; padding: 5px 9px; background: #BCF8EC; color: #102033; font-size: 12px; font-weight: 750; white-space: nowrap; } .ds-button-primary { min-height: 36px; padding: 7px 11px; border: 1px solid #0F61C7; border-radius: 8px; background: #0F61C7; color: #FFFFFF; font-weight: 650; cursor: pointer; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Shared Gift Table",
+    "overview": "Wantlist should feel like a bright, organized table where people can place gift ideas, see what is available, and act without social friction. The system is a product UI first: familiar controls, readable forms, predictable lists, and restrained motion. The color palette brings a vibrant social pulse, but the interface stays light and simple so casual users can use it without visual fatigue.",
+    "keyCharacteristics": [
+      "Familiar product controls with an approachable social tone.",
+      "Bright palette used as state and hierarchy, not decoration.",
+      "Rounded but not over-soft geometry, centered on 8px and 12px radii.",
+      "Clear ownership, privacy, and reservation states.",
+      "Light surfaces that do not tire the eye."
+    ],
+    "rules": [
+      { "name": "The Social Blue Rule", "body": "Primary action, selected state, and reserved state share Social Blue so users learn one confident action color.", "section": "colors" },
+      { "name": "The Yellow Is Rare Rule", "body": "Signal Yellow is an accent, not a background theme. If more than 10% of a screen is yellow, the screen is shouting.", "section": "colors" },
+      { "name": "The No Purple SaaS Rule", "body": "Purple gradients, blue-purple glow, glassmorphism, and low-contrast pastel text are prohibited.", "section": "colors" },
+      { "name": "The Product Sans Rule", "body": "Do not introduce display fonts for labels, buttons, data, or navigation. Familiarity is the point.", "section": "typography" },
+      { "name": "The No Whisper Text Rule", "body": "Muted copy must stay readable. Never use pale gray or low-contrast pastel text on mint or sky surfaces.", "section": "typography" },
+      { "name": "The Tonal Depth Rule", "body": "Use white, mint, soft sky, and 1px lines to create depth before reaching for shadow.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do use Social Blue for primary actions, reserved states, and selected controls.",
+      "Do keep most surfaces white, Mint Paper, or Soft Sky so the product remains light and easy on the eyes.",
+      "Do pair every state color with text labels like \"Disponivel\", \"Reservado\", \"Seu\", or \"Privada\".",
+      "Do keep component geometry consistent: 8px radius for controls, 12px only for softer media containers.",
+      "Do respect reduced motion; the showcase scroll may pause or become manually scrollable."
+    ],
+    "donts": [
+      "Don't use generic SaaS purple, purple-blue gradients, decorative glow, or glassmorphism.",
+      "Don't use low-contrast pastel text on mint, sky, yellow, or white backgrounds.",
+      "Don't make yellow a large page background or default button color.",
+      "Don't add thick side-stripe borders to cards, rows, alerts, or empty states.",
+      "Don't invent unusual form controls, modals, or navigation patterns when standard product controls work."
+    ]
+  }
+}

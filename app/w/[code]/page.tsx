@@ -88,6 +88,7 @@ export default function PublicWishlistPage() {
     <main className="page stack">
       <header className="wishlist-header">
         <div className="stack">
+          <span className="wishlist-kicker">Minha lista de desejos:</span>
           <h1>{data.wishlist.title}</h1>
           <p className="muted">Wishlist de <strong>{data.wishlist.owner_name}</strong> · {data.items.length} itens</p>
         </div>
@@ -186,7 +187,6 @@ export default function PublicWishlistPage() {
               </div>
               {expanded && (
                 <div className="item-row-details" id={detailsId}>
-                  <strong>{item.name}</strong>
                   {item.description ? <p>{item.description}</p> : <p className="muted">Este item ainda não tem descrição.</p>}
                 </div>
               )}
@@ -196,7 +196,7 @@ export default function PublicWishlistPage() {
       </section>
 
       {data.isOwner && !showItemForm && <button className="fab-add" aria-label="Adicionar item" onClick={() => setShowItemForm(true)}><Plus size={24} aria-hidden /></button>}
-      {data.isOwner && <Link className="button" href="/painel">Voltar ao painel</Link>}
+      {data.isOwner && <Link className="button back-to-dashboard" href="/painel">Voltar ao painel</Link>}
     </main>
   );
 }
