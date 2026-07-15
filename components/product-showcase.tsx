@@ -2,38 +2,46 @@
 
 import Image from "next/image";
 import { Star } from "lucide-react";
-import { useEffect, useState } from "react";
 
-type ShowcaseImage = { image_url: string; name: string };
+type ShowcaseProduct = { image_url: string; name: string };
 
-export function ProductShowcase({ images }: { images: ShowcaseImage[] }) {
-  const [active, setActive] = useState(0);
+function ProductPreview({ product, duplicate = false }: { product: ShowcaseProduct; duplicate?: boolean }) {
+  return (
+    <article className="showcase-product" aria-hidden={duplicate || undefined}>
+      <div className="showcase-thumb">
+        <Image src={product.image_url} alt={duplicate ? "" : product.name} fill sizes="104px" priority={!duplicate} />
+      </div>
+      <div className="showcase-product-copy">
+        <strong>{product.name}</strong>
+        <span>Preview de produto salvo</span>
+        <span className="badge available">Disponível</span>
+      </div>
+    </article>
+  );
+}
 
-  useEffect(() => {
-    if (images.length < 2) return;
-    const timer = window.setInterval(() => {
-      setActive((current) => (current + 1) % images.length);
-    }, 4000);
-    return () => window.clearInterval(timer);
-  }, [images.length]);
+export function ProductShowcase({ products }: { products: ShowcaseProduct[] }) {
+  if (products.length === 0) {
+    return (
+      <div className="showcase showcase-empty">
+        <Star aria-hidden="true" size={52} strokeWidth={1.5} />
+        <span>Seus desejos vão aparecer aqui</span>
+      </div>
+    );
+  }
+
+  const items = products.length === 1 ? [...products, ...products, ...products] : products;
 
   return (
-    <div className="showcase" aria-label="Itens de wishlists públicas">
-      {images.length === 0 ? (
-        <div className="showcase-empty">
-          <Star aria-hidden="true" size={52} strokeWidth={1.5} />
-          <span>Seus desejos vão aparecer aqui</span>
+    <div className="showcase" aria-label="Exemplos de produtos em uma wishlist">
+      <div className="showcase-track">
+        <div className="showcase-set">
+          {items.map((product, index) => <ProductPreview product={product} key={`first-${index}`} />)}
         </div>
-      ) : (
-        <>
-          <div className="showcase-images">
-            {images.map((item, index) => (
-              <Image key={`${item.image_url}-${index}`} className={`showcase-image${index === active ? " active" : ""}`} src={item.image_url} alt={item.name} fill sizes="(max-width: 760px) calc(100vw - 32px), 430px" priority={index === 0} unoptimized />
-            ))}
-          </div>
-          {images.length > 1 && <div className="showcase-dots" aria-hidden="true">{images.map((_, index) => <span className={index === active ? "active" : ""} key={index} />)}</div>}
-        </>
-      )}
+        <div className="showcase-set" aria-hidden="true">
+          {items.map((product, index) => <ProductPreview product={product} duplicate key={`second-${index}`} />)}
+        </div>
+      </div>
     </div>
   );
 }
