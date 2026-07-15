@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ArrowUpRight, Eye, EyeOff, Globe2, MailPlus, Plus, Share2, Trash2, UserPlus, X } from "lucide-react";
+import { ArrowUpRight, Eye, EyeOff, Globe2, MailPlus, MoreHorizontal, Plus, Share2, Trash2, UserPlus, X } from "lucide-react";
 import { api } from "@/lib/client-api";
 import { useAuth } from "@/components/auth-provider";
 import { ItemForm } from "@/components/item-form";
@@ -30,6 +30,7 @@ export default function PublicWishlistPage() {
   const [copied, setCopied] = useState(false);
   const [showVisibilityMenu, setShowVisibilityMenu] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
 
   async function load() {
     setError("");
@@ -42,6 +43,10 @@ export default function PublicWishlistPage() {
   async function authAction(fn: () => Promise<void>) {
     if (!user) { router.push("/login"); return; }
     await fn(); await load();
+  }
+
+  function toggleItem(id: string) {
+    setExpandedItemId((current) => current === id ? null : id);
   }
 
   async function changeVisibility(visibility: string) {
@@ -146,23 +151,48 @@ export default function PublicWishlistPage() {
           <button className="button primary add-item-inline" onClick={() => setShowItemForm(true)}><Plus size={18} aria-hidden />Adicionar item</button>
         )}
         {data.isOwner && showItemForm && <ItemForm onCancel={() => setShowItemForm(false)} onSaved={() => { setShowItemForm(false); load(); }} />}
-        {data.items.length === 0 ? <div className="empty">Esta wishlist ainda não possui itens.</div> : data.items.map((item: any) => (
-          <article className="item-row" key={item.id}>
-            {item.image_url ? <Image className="item-row-image" src={item.image_url} alt="" width={88} height={88} unoptimized /> : <div className="item-row-image" />}
-            <div className="item-row-copy">
-              <strong title={item.name}>{item.name}</strong>
-              <span className="muted">{item.domain}</span>
-            </div>
-            <span className={`badge item-status ${item.reserved ? "reserved" : "available"}`}>{item.reserved_by_me ? "Seu" : item.reserved ? "Reservado" : "Disponível"}</span>
-            <div className="item-row-actions">
-              <a className="icon-button" href={item.original_url} target="_blank" rel="noreferrer" title="Ver item" aria-label={`Ver ${item.name}`}><ArrowUpRight size={18} aria-hidden /></a>
-              {!data.isOwner && !item.reserved && <button className="button primary compact" onClick={() => authAction(() => reserve(item.id))}>Reservar</button>}
-              {!data.isOwner && item.reserved_by_me && <button className="button compact" onClick={() => authAction(() => unreserve(item.id))}>Desfazer</button>}
-              {data.isOwner && item.reserved && <button className="icon-button danger" title="Remover reserva" aria-label="Remover reserva" onClick={() => confirm("Remover a reserva deste item?") && authAction(() => unreserve(item.id))}><EyeOff size={18} aria-hidden /></button>}
-              {data.isOwner && <button className="icon-button danger" title="Excluir item" aria-label={`Excluir ${item.name}`} onClick={() => remove(item.id)}><Trash2 size={18} aria-hidden /></button>}
-            </div>
-          </article>
-        ))}
+        {data.items.length === 0 ? <div className="empty">Esta wishlist ainda não possui itens.</div> : data.items.map((item: any) => {
+          const expanded = expandedItemId === item.id;
+          const detailsId = `item-details-${item.id}`;
+          return (
+            <article
+              className={`item-row${expanded ? " expanded" : ""}`}
+              key={item.id}
+              role="button"
+              tabIndex={0}
+              aria-expanded={expanded}
+              aria-controls={detailsId}
+              onClick={() => toggleItem(item.id)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  toggleItem(item.id);
+                }
+              }}
+            >
+              {item.image_url ? <Image className="item-row-image" src={item.image_url} alt="" width={88} height={88} unoptimized /> : <div className="item-row-image" />}
+              <div className="item-row-copy">
+                <strong className="item-row-title" title={item.name}>{item.name}</strong>
+                <span className="muted">{item.domain}</span>
+              </div>
+              <span className={`badge item-status ${item.reserved ? "reserved" : "available"}`}>{item.reserved_by_me ? "Seu" : item.reserved ? "Reservado" : "Disponível"}</span>
+              <div className="item-row-actions" onClick={(event) => event.stopPropagation()}>
+                <button className="icon-button" title={expanded ? "Recolher detalhes" : "Ver detalhes"} aria-label={expanded ? "Recolher detalhes" : `Ver detalhes de ${item.name}`} onClick={() => toggleItem(item.id)}><MoreHorizontal size={18} aria-hidden /></button>
+                <a className="icon-button" href={item.original_url} target="_blank" rel="noreferrer" title="Ver item" aria-label={`Ver ${item.name}`}><ArrowUpRight size={18} aria-hidden /></a>
+                {!data.isOwner && !item.reserved && <button className="button primary compact" onClick={() => authAction(() => reserve(item.id))}>Reservar</button>}
+                {!data.isOwner && item.reserved_by_me && <button className="button compact" onClick={() => authAction(() => unreserve(item.id))}>Desfazer</button>}
+                {data.isOwner && item.reserved && <button className="icon-button danger" title="Remover reserva" aria-label="Remover reserva" onClick={() => confirm("Remover a reserva deste item?") && authAction(() => unreserve(item.id))}><EyeOff size={18} aria-hidden /></button>}
+                {data.isOwner && <button className="icon-button danger" title="Excluir item" aria-label={`Excluir ${item.name}`} onClick={() => remove(item.id)}><Trash2 size={18} aria-hidden /></button>}
+              </div>
+              {expanded && (
+                <div className="item-row-details" id={detailsId}>
+                  <strong>{item.name}</strong>
+                  {item.description ? <p>{item.description}</p> : <p className="muted">Este item ainda não tem descrição.</p>}
+                </div>
+              )}
+            </article>
+          );
+        })}
       </section>
 
       {data.isOwner && !showItemForm && <button className="fab-add" aria-label="Adicionar item" onClick={() => setShowItemForm(true)}><Plus size={24} aria-hidden /></button>}

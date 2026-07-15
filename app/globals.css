@@ -64,13 +64,20 @@ button, input, textarea, select { font: inherit; }
 .wishlist-header p { margin: 0; }
 .wishlist-actions { display: flex; justify-content: flex-end; align-items: center; gap: 8px; flex-wrap: wrap; max-width: 520px; }
 .item-list { display: grid; gap: 10px; }
-.item-row { display: grid; grid-template-columns: 72px minmax(0, 1fr) auto auto; gap: 14px; align-items: center; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); padding: 10px; }
+.item-row { display: grid; grid-template-columns: 72px minmax(0, 1fr) auto auto; gap: 14px; align-items: center; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); padding: 10px; cursor: pointer; transition: background 160ms ease-out, border-color 160ms ease-out, transform 160ms ease-out; }
+.item-row:hover { background: var(--surface); border-color: color-mix(in oklch, var(--primary), var(--line) 62%); transform: translateY(-1px); }
+.item-row:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.item-row.expanded { align-items: start; background: var(--surface); }
 .item-row-image { width: 72px; height: 72px; border-radius: 8px; background: var(--surface-2); object-fit: cover; }
 .item-row-copy { min-width: 0; display: grid; gap: 5px; }
-.item-row-copy strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 56ch; }
+.item-row-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 56ch; }
+.item-row.expanded .item-row-title { white-space: normal; overflow: visible; text-overflow: clip; max-width: 72ch; }
 .item-row-copy span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
 .item-status { justify-self: end; white-space: nowrap; }
 .item-row-actions { display: flex; justify-content: flex-end; align-items: center; gap: 8px; }
+.item-row-details { grid-column: 2 / -1; display: grid; gap: 8px; color: var(--ink); line-height: 1.55; padding: 2px 4px 4px 0; }
+.item-row-details strong { font-size: 15px; }
+.item-row-details p { margin: 0; color: var(--muted); max-width: 78ch; }
 .form-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; }
 .form-heading h2 { margin: 0 0 4px; font-size: 20px; line-height: 1.2; }
 .form-heading p { margin: 0; }
@@ -103,7 +110,8 @@ button, input, textarea, select { font: inherit; }
   .dropdown-menu { left: 0; right: auto; }
   .item-row { grid-template-columns: 58px minmax(0, 1fr) auto; gap: 10px; }
   .item-row-image { width: 58px; height: 58px; }
-  .item-row-copy strong { max-width: 28ch; }
+  .item-row-title { max-width: 28ch; }
+  .item-row-details { grid-column: 1 / -1; padding-left: 0; }
   .item-row-actions { grid-column: 2 / -1; justify-content: flex-start; }
   .item-status { font-size: 11px; padding: 4px 7px; }
 }
