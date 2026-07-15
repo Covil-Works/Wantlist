@@ -2,15 +2,14 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { ExternalLink } from "lucide-react";
 import { Protected } from "@/components/protected";
 import { api } from "@/lib/client-api";
-import { ItemForm } from "@/components/item-form";
 
 type Dashboard = { profile: { display_name: string }; wishlist: any; following: any[] };
 
 export default function DashboardPage() {
   const [data, setData] = useState<Dashboard | null>(null);
-  const [showItem, setShowItem] = useState(false);
   const [title, setTitle] = useState("");
   const [visibility, setVisibility] = useState("public");
   const [error, setError] = useState("");
@@ -46,13 +45,7 @@ export default function DashboardPage() {
                     <span className="badge available">{data.wishlist.item_count - data.wishlist.reserved_count} disponiveis</span>
                     <span className="badge reserved">{data.wishlist.reserved_count} reservados</span>
                   </div>
-                  <div className="row">
-                    <Link className="button" href={`/w/${data.wishlist.public_code}`}>Abrir wishlist</Link>
-                    <Link className="button" href="/wishlist/configuracoes">Configuracoes</Link>
-                    <button className="button primary" onClick={() => setShowItem((v) => !v)}>Adicionar item</button>
-                    <button className="button" onClick={() => navigator.clipboard.writeText(`${location.origin}/w/${data.wishlist.public_code}`)}>Copiar link</button>
-                  </div>
-                  {showItem && <ItemForm onSaved={load} />}
+                  <Link className="button primary" href={`/w/${data.wishlist.public_code}`}><ExternalLink size={16} aria-hidden />Abrir wishlist</Link>
                 </div>
               )}
             </section>
