@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
+import Image from "next/image";
 import Link from "next/link";
 import "./globals.css";
 import { AuthProvider } from "@/components/auth-provider";
@@ -25,7 +26,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <div className="shell">
             <header className="topbar">
               <div className="topbar-inner">
-                <Link className="brand" href="/">Wantlist</Link>
+                <Link className="brand" href="/" aria-label="Wantlist">
+                  <Image src="/logo-wishlist.png" alt="" width={74} height={54} priority />
+                  <span className="sr-only">Wantlist</span>
+                </Link>
                 <UserNav />
               </div>
             </header>
