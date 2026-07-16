@@ -4,29 +4,29 @@
   "title": "Design System: Wantlist",
   "extensions": {
     "colorMeta": {
-      "social-blue": {
+      "petal-pink": {
         "role": "primary",
-        "displayName": "Social Blue",
-        "canonical": "#0F61C7",
-        "tonalRamp": ["oklch(18% 0.08 260)", "oklch(30% 0.13 260)", "oklch(43% 0.18 260)", "oklch(55% 0.2 260)", "oklch(68% 0.16 260)", "oklch(80% 0.11 260)", "oklch(90% 0.06 260)", "oklch(96% 0.03 260)"]
+        "displayName": "Petal Pink",
+        "canonical": "#FFA2C8",
+        "tonalRamp": ["oklch(24% 0.06 345)", "oklch(38% 0.1 345)", "oklch(52% 0.14 345)", "oklch(66% 0.16 345)", "oklch(76% 0.13 345)", "oklch(84% 0.1 345)", "oklch(91% 0.06 345)", "oklch(96% 0.03 345)"]
       },
-      "mint-paper": {
+      "butter-yellow": {
         "role": "secondary",
-        "displayName": "Mint Paper",
-        "canonical": "#BCF8EC",
-        "tonalRamp": ["oklch(20% 0.05 180)", "oklch(34% 0.07 180)", "oklch(48% 0.08 180)", "oklch(62% 0.08 180)", "oklch(76% 0.07 180)", "oklch(86% 0.055 180)", "oklch(92% 0.04 180)", "oklch(97% 0.025 180)"]
+        "displayName": "Butter Yellow",
+        "canonical": "#FFEBA5",
+        "tonalRamp": ["oklch(24% 0.04 92)", "oklch(40% 0.06 92)", "oklch(56% 0.08 92)", "oklch(72% 0.09 92)", "oklch(84% 0.08 92)", "oklch(91% 0.06 92)", "oklch(96% 0.035 92)", "oklch(98% 0.02 92)"]
       },
-      "signal-yellow": {
+      "warm-paper": {
         "role": "tertiary",
-        "displayName": "Signal Yellow",
-        "canonical": "#FFF453",
-        "tonalRamp": ["oklch(22% 0.05 100)", "oklch(38% 0.08 100)", "oklch(54% 0.1 100)", "oklch(70% 0.12 100)", "oklch(82% 0.13 100)", "oklch(90% 0.12 100)", "oklch(95% 0.09 100)", "oklch(98% 0.05 100)"]
+        "displayName": "Warm Paper",
+        "canonical": "#F7F3EB",
+        "tonalRamp": ["oklch(24% 0.015 80)", "oklch(40% 0.018 80)", "oklch(56% 0.02 80)", "oklch(72% 0.022 80)", "oklch(84% 0.018 80)", "oklch(91% 0.014 80)", "oklch(96% 0.01 80)", "oklch(98% 0.006 80)"]
       },
-      "soft-sky": {
+      "dusty-purple": {
         "role": "neutral",
-        "displayName": "Soft Sky",
-        "canonical": "#AED9E0",
-        "tonalRamp": ["oklch(20% 0.04 210)", "oklch(34% 0.05 210)", "oklch(48% 0.055 210)", "oklch(62% 0.05 210)", "oklch(74% 0.045 210)", "oklch(84% 0.035 210)", "oklch(91% 0.025 210)", "oklch(96% 0.015 210)"]
+        "displayName": "Dusty Purple",
+        "canonical": "#797596",
+        "tonalRamp": ["oklch(20% 0.04 288)", "oklch(32% 0.05 288)", "oklch(44% 0.055 288)", "oklch(56% 0.05 288)", "oklch(68% 0.04 288)", "oklch(80% 0.03 288)", "oklch(90% 0.02 288)", "oklch(96% 0.012 288)"]
       }
     },
     "typographyMeta": {
@@ -55,7 +55,7 @@
       "refersTo": "button-primary",
       "description": "The main action in a local area: create, save, reserve, or open an important flow.",
       "html": "<button class=\"ds-button-primary\">Criar wishlist</button>",
-      "css": ".ds-button-primary { min-height: 40px; padding: 9px 14px; border: 1px solid #0F61C7; border-radius: 8px; background: #0F61C7; color: #FFFFFF; font: 650 16px/1.2 Poppins, ui-sans-serif, system-ui, sans-serif; cursor: pointer; transition: background-color 150ms ease-out, border-color 150ms ease-out; } .ds-button-primary:hover { background: #0C4FA3; border-color: #0C4FA3; } .ds-button-primary:focus-visible { outline: 3px solid rgba(15, 97, 199, 0.28); outline-offset: 2px; }"
+      "css": ".ds-button-primary { min-height: 40px; padding: 9px 14px; border: 1px solid #FFA2C8; border-radius: 8px; background: #FFA2C8; color: #231F2C; font: 650 16px/1.2 Poppins, ui-sans-serif, system-ui, sans-serif; cursor: pointer; transition: background-color 150ms ease-out, border-color 150ms ease-out; } .ds-button-primary:hover { background: #F38AB8; border-color: #F38AB8; } .ds-button-primary:focus-visible { outline: 3px solid rgba(255, 162, 200, 0.42); outline-offset: 2px; }"
     },
     {
       "name": "Secondary Button",
@@ -63,7 +63,7 @@
       "refersTo": "button-secondary",
       "description": "A supporting action that stays familiar and low-noise.",
       "html": "<button class=\"ds-button-secondary\">Entrar</button>",
-      "css": ".ds-button-secondary { min-height: 40px; padding: 9px 14px; border: 1px solid #8BBCC8; border-radius: 8px; background: #FFFFFF; color: #102033; font: 650 16px/1.2 Poppins, ui-sans-serif, system-ui, sans-serif; cursor: pointer; transition: background-color 150ms ease-out, border-color 150ms ease-out; } .ds-button-secondary:hover { background: #AED9E0; } .ds-button-secondary:focus-visible { outline: 3px solid rgba(15, 97, 199, 0.22); outline-offset: 2px; }"
+      "css": ".ds-button-secondary { min-height: 40px; padding: 9px 14px; border: 1px solid #B3ADBE; border-radius: 8px; background: #F7F3EB; color: #231F2C; font: 650 16px/1.2 Poppins, ui-sans-serif, system-ui, sans-serif; cursor: pointer; transition: background-color 150ms ease-out, border-color 150ms ease-out; } .ds-button-secondary:hover { background: #E8E1E9; } .ds-button-secondary:focus-visible { outline: 3px solid rgba(255, 162, 200, 0.36); outline-offset: 2px; }"
     },
     {
       "name": "Text Field",
@@ -71,7 +71,7 @@
       "refersTo": "input-field",
       "description": "Standard product field for URLs, names, settings, and auth forms.",
       "html": "<label class=\"ds-field\"><span>URL do produto</span><input class=\"ds-input\" placeholder=\"https://loja.com/produto\" /></label>",
-      "css": ".ds-field { display: grid; gap: 7px; color: #102033; font-family: Poppins, ui-sans-serif, system-ui, sans-serif; } .ds-field span { font-size: 13px; line-height: 1.2; font-weight: 700; } .ds-input { width: 100%; border: 1px solid #8BBCC8; border-radius: 8px; padding: 11px 12px; background: #FFFFFF; color: #102033; font: 400 16px/1.2 Poppins, ui-sans-serif, system-ui, sans-serif; } .ds-input::placeholder { color: #46606A; } .ds-input:focus { outline: 3px solid rgba(15, 97, 199, 0.22); border-color: #0F61C7; }"
+      "css": ".ds-field { display: grid; gap: 7px; color: #231F2C; font-family: Poppins, ui-sans-serif, system-ui, sans-serif; } .ds-field span { font-size: 13px; line-height: 1.2; font-weight: 700; } .ds-input { width: 100%; border: 1px solid #B3ADBE; border-radius: 8px; padding: 11px 12px; background: #FFFFFF; color: #231F2C; font: 400 16px/1.2 Poppins, ui-sans-serif, system-ui, sans-serif; } .ds-input::placeholder { color: #625D6E; } .ds-input:focus { outline: 3px solid rgba(255, 162, 200, 0.36); border-color: #FFA2C8; }"
     },
     {
       "name": "Status Badges",
@@ -79,7 +79,7 @@
       "refersTo": "badge-available",
       "description": "Reservation and visibility state labels that pair text with color.",
       "html": "<div class=\"ds-badges\"><span class=\"ds-badge ds-badge-available\">Disponivel</span><span class=\"ds-badge ds-badge-reserved\">Reservado</span></div>",
-      "css": ".ds-badges { display: flex; gap: 8px; flex-wrap: wrap; font-family: Poppins, ui-sans-serif, system-ui, sans-serif; } .ds-badge { display: inline-flex; align-items: center; border-radius: 999px; padding: 5px 9px; font-size: 12px; line-height: 1.2; font-weight: 750; } .ds-badge-available { background: #BCF8EC; color: #102033; } .ds-badge-reserved { background: #0F61C7; color: #FFFFFF; }"
+      "css": ".ds-badges { display: flex; gap: 8px; flex-wrap: wrap; font-family: Poppins, ui-sans-serif, system-ui, sans-serif; } .ds-badge { display: inline-flex; align-items: center; border-radius: 999px; padding: 5px 9px; font-size: 12px; line-height: 1.2; font-weight: 750; } .ds-badge-available { background: #FFEBA5; color: #231F2C; } .ds-badge-reserved { background: #797596; color: #FFFFFF; }"
     },
     {
       "name": "Wishlist Item Row",
@@ -87,12 +87,12 @@
       "refersTo": "wishlist-item-row",
       "description": "Dense, scannable item row for public and owner wishlist views.",
       "html": "<article class=\"ds-item-row\"><div class=\"ds-thumb\"></div><div class=\"ds-item-copy\"><strong>Fone Bluetooth JBL</strong><span>loja.com</span></div><span class=\"ds-badge ds-badge-available\">Disponivel</span><button class=\"ds-button-primary\">Reservar</button></article>",
-      "css": ".ds-item-row { display: grid; grid-template-columns: 72px minmax(0, 1fr) auto auto; gap: 14px; align-items: center; border: 1px solid #8BBCC8; border-radius: 8px; background: #FFFFFF; padding: 10px; color: #102033; font-family: Poppins, ui-sans-serif, system-ui, sans-serif; } .ds-thumb { width: 72px; height: 72px; border-radius: 8px; background: #AED9E0; } .ds-item-copy { min-width: 0; display: grid; gap: 5px; } .ds-item-copy strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 16px; line-height: 1.25; } .ds-item-copy span { color: #46606A; font-size: 13px; } .ds-badge { border-radius: 999px; padding: 5px 9px; background: #BCF8EC; color: #102033; font-size: 12px; font-weight: 750; white-space: nowrap; } .ds-button-primary { min-height: 36px; padding: 7px 11px; border: 1px solid #0F61C7; border-radius: 8px; background: #0F61C7; color: #FFFFFF; font-weight: 650; cursor: pointer; }"
+      "css": ".ds-item-row { display: grid; grid-template-columns: 72px minmax(0, 1fr) auto auto; gap: 14px; align-items: center; border: 1px solid #B3ADBE; border-radius: 8px; background: #FFFFFF; padding: 10px; color: #231F2C; font-family: Poppins, ui-sans-serif, system-ui, sans-serif; } .ds-thumb { width: 72px; height: 72px; border-radius: 8px; background: #E8E1E9; } .ds-item-copy { min-width: 0; display: grid; gap: 5px; } .ds-item-copy strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 16px; line-height: 1.25; } .ds-item-copy span { color: #625D6E; font-size: 13px; } .ds-badge { border-radius: 999px; padding: 5px 9px; background: #FFEBA5; color: #231F2C; font-size: 12px; font-weight: 750; white-space: nowrap; } .ds-button-primary { min-height: 36px; padding: 7px 11px; border: 1px solid #FFA2C8; border-radius: 8px; background: #FFA2C8; color: #231F2C; font-weight: 650; cursor: pointer; }"
     }
   ],
   "narrative": {
     "northStar": "The Shared Gift Table",
-    "overview": "Wantlist should feel like a bright, organized table where people can place gift ideas, see what is available, and act without social friction. The system is a product UI first: familiar controls, readable forms, predictable lists, and restrained motion. The color palette brings a vibrant social pulse, but the interface stays light and simple so casual users can use it without visual fatigue.",
+    "overview": "Wantlist should feel like a bright, organized table where people can place gift ideas, see what is available, and act without social friction. The system is a product UI first: familiar controls, readable forms, predictable lists, and restrained motion. The color palette brings a soft social pulse through pink, butter yellow, warm paper, and muted purple, while the interface stays light and simple so casual users can use it without visual fatigue.",
     "keyCharacteristics": [
       "Familiar product controls with an approachable social tone.",
       "Bright palette used as state and hierarchy, not decoration.",
@@ -101,24 +101,24 @@
       "Light surfaces that do not tire the eye."
     ],
     "rules": [
-      { "name": "The Social Blue Rule", "body": "Primary action, selected state, and reserved state share Social Blue so users learn one confident action color.", "section": "colors" },
-      { "name": "The Yellow Is Rare Rule", "body": "Signal Yellow is an accent, not a background theme. If more than 10% of a screen is yellow, the screen is shouting.", "section": "colors" },
-      { "name": "The No Purple SaaS Rule", "body": "Purple gradients, blue-purple glow, glassmorphism, and low-contrast pastel text are prohibited.", "section": "colors" },
+      { "name": "The Petal Pink Rule", "body": "Primary action and selected state use Petal Pink so users learn one confident action color.", "section": "colors" },
+      { "name": "The Warm Paper Rule", "body": "Warm Paper is the page background. Cards and controls may use white when they need clearer separation.", "section": "colors" },
+      { "name": "The No Heavy Gradient Rule", "body": "Purple gradients, glow, glassmorphism, and low-contrast pastel text are prohibited.", "section": "colors" },
       { "name": "The Product Sans Rule", "body": "Do not introduce display fonts for labels, buttons, data, or navigation. Familiarity is the point.", "section": "typography" },
-      { "name": "The No Whisper Text Rule", "body": "Muted copy must stay readable. Never use pale gray or low-contrast pastel text on mint or sky surfaces.", "section": "typography" },
-      { "name": "The Tonal Depth Rule", "body": "Use white, mint, soft sky, and 1px lines to create depth before reaching for shadow.", "section": "elevation" }
+      { "name": "The No Whisper Text Rule", "body": "Muted copy must stay readable. Never use pale gray or low-contrast pastel text on warm, yellow, pink, or purple-tinted surfaces.", "section": "typography" },
+      { "name": "The Tonal Depth Rule", "body": "Use Warm Paper, white, Butter Yellow, Dusty Purple tints, and 1px lines to create depth before reaching for shadow.", "section": "elevation" }
     ],
     "dos": [
-      "Do use Social Blue for primary actions, reserved states, and selected controls.",
-      "Do keep most surfaces white, Mint Paper, or Soft Sky so the product remains light and easy on the eyes.",
+      "Do use Petal Pink for primary actions and selected controls.",
+      "Do keep the page on Warm Paper and most cards white so the product remains light and easy on the eyes.",
       "Do pair every state color with text labels like \"Disponivel\", \"Reservado\", \"Seu\", or \"Privada\".",
       "Do keep component geometry consistent: 8px radius for controls, 12px only for softer media containers.",
       "Do respect reduced motion; the showcase scroll may pause or become manually scrollable."
     ],
     "donts": [
-      "Don't use generic SaaS purple, purple-blue gradients, decorative glow, or glassmorphism.",
-      "Don't use low-contrast pastel text on mint, sky, yellow, or white backgrounds.",
-      "Don't make yellow a large page background or default button color.",
+      "Don't use generic SaaS purple gradients, decorative glow, or glassmorphism.",
+      "Don't use low-contrast pastel text on pink, yellow, purple tint, or white backgrounds.",
+      "Don't make Butter Yellow the default button color.",
       "Don't add thick side-stripe borders to cards, rows, alerts, or empty states.",
       "Don't invent unusual form controls, modals, or navigation patterns when standard product controls work."
     ]
