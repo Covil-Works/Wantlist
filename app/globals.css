@@ -102,12 +102,15 @@ button, input, textarea, select, a { -webkit-tap-highlight-color: transparent; }
 .item-form { background: var(--surface); }
 .add-item-inline { justify-self: start; }
 .menu-wrap { position: relative; }
-.dropdown-menu { position: absolute; top: calc(100% + 8px); right: 0; z-index: 20; width: min(320px, calc(100vw - 32px)); display: grid; gap: 8px; padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); box-shadow: 0 2px 8px color-mix(in srgb, var(--ink) 8%, transparent); }
+.dropdown-menu { position: absolute; top: calc(100% + 8px); right: 0; z-index: 20; width: min(320px, calc(100vw - 32px)); display: grid; gap: 6px; padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); box-shadow: 0 8px 24px color-mix(in srgb, var(--ink) 10%, transparent); }
 .visibility-menu > strong { font-size: 13px; }
-.menu-option { width: 100%; border: 0; border-radius: 8px; background: transparent; color: var(--ink); padding: 10px; display: grid; grid-template-columns: 20px 1fr; gap: 10px; align-items: center; text-align: left; cursor: pointer; }
+.nav-user-menu { width: min(184px, calc(100vw - 32px)); }
+.menu-option { width: 100%; min-height: 38px; border: 0; border-radius: 8px; background: transparent; color: var(--ink); padding: 8px 10px; display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 10px; align-items: center; text-align: left; cursor: pointer; font-weight: 650; transition: background-color 150ms ease-out, color 150ms ease-out; }
 .menu-option:hover { background: var(--surface); }
+.menu-option:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 1px; }
 .menu-option:disabled { cursor: default; background: var(--surface-2); }
 .menu-option span { display: grid; gap: 3px; }
+.menu-option strong { font-size: 14px; line-height: 1.25; }
 .menu-option small { color: var(--muted); font-size: 12px; line-height: 1.35; }
 .modal-backdrop { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; padding: 18px; background: color-mix(in srgb, var(--ink) 38%, transparent); }
 .modal-panel { width: min(520px, 100%); border: 1px solid var(--line); border-radius: 8px; background: var(--bg); padding: 18px; }
@@ -125,7 +128,6 @@ button, input, textarea, select, a { -webkit-tap-highlight-color: transparent; }
   .nav-desktop { display: none; }
   .nav-menu-button { display: inline-grid; }
   .nav-mobile-menu { left: auto; right: 0; display: grid; width: min(220px, calc(100vw - 32px)); }
-  .nav-mobile-menu .button { width: 100%; justify-content: flex-start; }
   .wishlist-header { display: grid; }
   .wishlist-header h1 { font-size: 28px; }
   .wishlist-actions { justify-content: flex-start; max-width: none; }
@@ -133,6 +135,7 @@ button, input, textarea, select, a { -webkit-tap-highlight-color: transparent; }
   .fab-add { display: grid; }
   .dropdown-menu { left: 0; right: auto; }
   .nav-mobile-menu { left: auto; right: 0; }
+  .nav-user-menu { left: auto; right: 0; }
   .item-row { grid-template-columns: 58px minmax(0, 1fr) auto; gap: 10px; }
   .item-row-image { width: 58px; height: 58px; }
   .item-row-title { max-width: 28ch; }

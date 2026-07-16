@@ -23,7 +23,7 @@ export default function DashboardPage() {
   return (
     <Protected>
       <main className="page stack">
-        <div className="spread"><div><h1>Painel</h1><p className="muted">Gerencie sua lista e acompanhe wishlists que voce segue.</p></div><Link className="button" href="/perfil">Perfil</Link></div>
+        <div><h1>Painel</h1><p className="muted">Gerencie sua lista e acompanhe wishlists que voce segue.</p></div>
         {error && <div className="empty">{error} <Link href="/onboarding">Ir para onboarding</Link></div>}
         {!data ? <div className="empty">Carregando painel.</div> : (
           <div className="grid">
