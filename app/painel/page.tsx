@@ -1,72 +1,152 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { ArrowUpRight, EyeOff, Globe2, Heart, ListPlus, LockKeyhole, Settings, UserPlus, UsersRound } from "lucide-react";
+import { useAuth } from "@/components/auth-provider";
 import { Protected } from "@/components/protected";
 import { api } from "@/lib/client-api";
-import { ItemForm } from "@/components/item-form";
 
-type Dashboard = { profile: { display_name: string }; wishlist: any; following: any[] };
+type WishlistSummary = {
+  public_code: string;
+  title: string;
+  visibility: string;
+  item_count: number;
+  reserved_count: number;
+};
+
+type FollowedWishlist = {
+  public_code: string;
+  title: string;
+  owner_name: string;
+  access_type: string;
+  item_count: number;
+};
+
+type Dashboard = {
+  profile: { display_name: string };
+  wishlist: WishlistSummary | null;
+  following: FollowedWishlist[];
+};
+
+const visibilityLabels: Record<string, string> = {
+  public: "Publica",
+  invited: "Convidados",
+  private: "Privada",
+};
+
+const visibilityIcons = {
+  public: Globe2,
+  invited: UserPlus,
+  private: LockKeyhole,
+};
+
+function visibilityLabel(value: string) {
+  return visibilityLabels[value] || value;
+}
+
+function VisibilityIcon({ value }: { value: string }) {
+  const Icon = visibilityIcons[value as keyof typeof visibilityIcons] || EyeOff;
+  return <Icon size={14} aria-hidden />;
+}
 
 export default function DashboardPage() {
+  const { user, loading } = useAuth();
   const [data, setData] = useState<Dashboard | null>(null);
-  const [showItem, setShowItem] = useState(false);
   const [title, setTitle] = useState("");
   const [visibility, setVisibility] = useState("public");
   const [error, setError] = useState("");
-  async function load() { setData(await api("/api/dashboard")); }
-  useEffect(() => { load().catch(() => setError("Complete seu perfil para acessar o painel.")); }, []);
+
+  const load = useCallback(async () => {
+    const next = await api("/api/dashboard");
+    setData(next);
+    setError("");
+  }, []);
+
+  useEffect(() => {
+    if (loading || !user) return;
+    load().catch(() => setError("Complete seu perfil para acessar suas wishlists."));
+  }, [load, loading, user]);
+
   async function createWishlist(event: React.FormEvent) {
     event.preventDefault();
     await api("/api/wishlist", { method: "POST", body: JSON.stringify({ title, visibility }) });
     await load();
   }
+
   return (
     <Protected>
-      <main className="page stack">
-        <div className="spread"><div><h1>Painel</h1><p className="muted">Gerencie sua lista e acompanhe wishlists que voce segue.</p></div><Link className="button" href="/perfil">Perfil</Link></div>
+      <main className="page dashboard-page">
         {error && <div className="empty">{error} <Link href="/onboarding">Ir para onboarding</Link></div>}
-        {!data ? <div className="empty">Carregando painel.</div> : (
-          <div className="grid">
-            <section className="stack">
-              <h2>Minha wishlist</h2>
-              {!data.wishlist ? (
-                <form className="panel stack" onSubmit={createWishlist}>
-                  <p className="muted">Crie uma wishlist unica para compartilhar produtos de qualquer loja.</p>
-                  <label className="field"><span>Titulo</span><input className="input" required value={title} onChange={(e) => setTitle(e.target.value)} /></label>
-                  <label className="field"><span>Visibilidade</span><select className="select" value={visibility} onChange={(e) => setVisibility(e.target.value)}><option value="public">Qualquer pessoa</option><option value="invited">Somente convidados</option><option value="private">Somente eu</option></select></label>
-                  <button className="button primary">Criar minha wishlist</button>
-                </form>
+        {!data ? <div className="empty">Carregando suas wishlists.</div> : (
+          <>
+            <section className="dashboard-mine" aria-labelledby="my-lists-title">
+              <div className="dashboard-section-heading">
+                <h1 className="dashboard-title" id="my-lists-title">Minhas listas</h1>
+                <Heart size={22} aria-hidden />
+              </div>
+              <div className="dashboard-owned" aria-labelledby="my-wishlist-title">
+                {!data.wishlist ? (
+                  <form className="dashboard-create" onSubmit={createWishlist}>
+                    <div className="dashboard-owned-copy">
+                      <span className="dashboard-label">Sua lista</span>
+                      <h2 id="my-wishlist-title">Crie sua wishlist</h2>
+                      <p className="muted">Uma lista unica para organizar produtos de qualquer loja e compartilhar quando quiser.</p>
+                    </div>
+                    <div className="dashboard-create-fields">
+                      <label className="field"><span>Titulo</span><input className="input" required value={title} onChange={(e) => setTitle(e.target.value)} /></label>
+                      <label className="field"><span>Visibilidade</span><select className="select" value={visibility} onChange={(e) => setVisibility(e.target.value)}><option value="public">Qualquer pessoa</option><option value="invited">Somente convidados</option><option value="private">Somente eu</option></select></label>
+                      <button className="button primary"><ListPlus size={18} aria-hidden />Criar wishlist</button>
+                    </div>
+                  </form>
+                ) : (
+                  <>
+                    <div className="dashboard-owned-copy">
+                      <h2 id="my-wishlist-title">{data.wishlist.title}</h2>
+                      <Link className="dashboard-public-link" href={`/w/${data.wishlist.public_code}`}>/w/{data.wishlist.public_code}</Link>
+                      <div className="dashboard-owned-details" aria-label="Resumo da minha wishlist">
+                        <span><VisibilityIcon value={data.wishlist.visibility} />{visibilityLabel(data.wishlist.visibility)}</span>
+                        <span>{data.wishlist.item_count} {data.wishlist.item_count === 1 ? "item" : "itens"}</span>
+                        <span>{Math.max(data.wishlist.item_count - data.wishlist.reserved_count, 0)} disponiveis</span>
+                        <span>{data.wishlist.reserved_count} reservados</span>
+                      </div>
+                    </div>
+                    <div className="dashboard-actions">
+                      <Link className="button primary" href={`/w/${data.wishlist.public_code}`}><ArrowUpRight size={18} aria-hidden />Abrir wishlist</Link>
+                      <Link className="button" href="/wishlist/configuracoes"><Settings size={17} aria-hidden />Configurar</Link>
+                    </div>
+                  </>
+                )}
+              </div>
+            </section>
+
+            <section className="dashboard-following" aria-labelledby="following-title">
+              <div className="dashboard-section-heading">
+                <div>
+                  <h2 id="following-title">Listas que eu sigo</h2>
+                  <p className="muted">{data.following.length === 0 ? "Listas publicas ou convites aceitos aparecem aqui." : `${data.following.length} ${data.following.length === 1 ? "lista acompanhada" : "listas acompanhadas"}.`}</p>
+                </div>
+                <UsersRound size={22} aria-hidden />
+              </div>
+
+              {data.following.length === 0 ? (
+                <div className="empty dashboard-empty-following">Nenhuma wishlist acompanhada ainda. Abra uma lista publica ou aceite um convite para acompanhar por aqui.</div>
               ) : (
-                <div className="panel stack">
-                  <div className="spread"><strong>{data.wishlist.title}</strong><span className="badge">{data.wishlist.visibility}</span></div>
-                  <p className="muted">/{`w/${data.wishlist.public_code}`}</p>
-                  <div className="row">
-                    <span className="badge">{data.wishlist.item_count} itens</span>
-                    <span className="badge available">{data.wishlist.item_count - data.wishlist.reserved_count} disponiveis</span>
-                    <span className="badge reserved">{data.wishlist.reserved_count} reservados</span>
-                  </div>
-                  <div className="row">
-                    <Link className="button" href={`/w/${data.wishlist.public_code}`}>Abrir wishlist</Link>
-                    <Link className="button" href="/wishlist/configuracoes">Configuracoes</Link>
-                    <button className="button primary" onClick={() => setShowItem((v) => !v)}>Adicionar item</button>
-                    <button className="button" onClick={() => navigator.clipboard.writeText(`${location.origin}/w/${data.wishlist.public_code}`)}>Copiar link</button>
-                  </div>
-                  {showItem && <ItemForm onSaved={load} />}
+                <div className="dashboard-following-list">
+                  {data.following.map((w) => (
+                    <Link className="dashboard-following-row" href={`/w/${w.public_code}`} key={w.public_code}>
+                      <span className="dashboard-following-main">
+                        <strong>{w.title}</strong>
+                        <span className="muted">De {w.owner_name} - {w.item_count} {w.item_count === 1 ? "item" : "itens"}</span>
+                      </span>
+                      <span className="badge">{w.access_type}</span>
+                      <ArrowUpRight size={18} aria-hidden />
+                    </Link>
+                  ))}
                 </div>
               )}
             </section>
-            <section className="stack">
-              <h2>Wishlists que sigo</h2>
-              {data.following.length === 0 ? <div className="empty">Nenhuma wishlist acompanhada ainda. Abra uma lista publica ou aceite um convite.</div> : data.following.map((w) => (
-                <div className="panel stack" key={w.public_code}>
-                  <div className="spread"><strong>{w.title}</strong><span className="badge">{w.access_type}</span></div>
-                  <p className="muted">De {w.owner_name} · {w.item_count} itens</p>
-                  <Link className="button" href={`/w/${w.public_code}`}>Abrir</Link>
-                </div>
-              ))}
-            </section>
-          </div>
+          </>
         )}
       </main>
     </Protected>
