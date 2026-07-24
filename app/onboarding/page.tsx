@@ -21,7 +21,7 @@ export default function OnboardingPage() {
     }
   }
   return (
-    <Protected>
+    <Protected requireProfile={false}>
       <main className="page stack">
         <h1>Complete seu perfil</h1>
         <form className="panel stack" onSubmit={submit}>

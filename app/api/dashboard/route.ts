@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
 import { sql } from "@/lib/db";
-import { requireProfile } from "@/lib/auth";
+import { requireFirebaseUid } from "@/lib/auth";
 
 export async function GET() {
-  const profile = await requireProfile();
+  const uid = await requireFirebaseUid();
+  const profiles = await sql`select * from profiles where firebase_uid = ${uid} limit 1`;
+  const profile = profiles[0];
+  if (!profile) return NextResponse.json({ error: "Perfil incompleto" }, { status: 403 });
   const mine = await sql`
     select w.*,
       count(i.id)::int as item_count,
