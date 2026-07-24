@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { createUserWithEmailAndPassword, sendPasswordResetEmail, signInWithEmailAndPassword } from "firebase/auth";
 import { useRouter } from "next/navigation";
-import { auth } from "@/lib/firebase-client";
+import { auth, isFirebaseConfigured } from "@/lib/firebase-client";
 import { api } from "@/lib/client-api";
 
 export function AuthForm({ mode }: { mode: "login" | "signup" | "reset" }) {
@@ -16,10 +16,14 @@ export function AuthForm({ mode }: { mode: "login" | "signup" | "reset" }) {
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     setError(""); setMessage("");
+    if (!isFirebaseConfigured) {
+      setError("Firebase não configurado. Verifique as variáveis NEXT_PUBLIC_FIREBASE_* na Vercel e faça um novo deploy.");
+      return;
+    }
     try {
       if (mode === "reset") {
         await sendPasswordResetEmail(auth, email);
-        setMessage("Enviamos as instrucoes de recuperacao.");
+        setMessage("Enviamos as instruções de recuperação.");
         return;
       }
       if (mode === "signup") {
@@ -31,7 +35,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" | "reset" }) {
       const { profile } = await api("/api/profile");
       router.push(profile ? "/painel" : "/onboarding");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Falha na autenticacao.");
+      setError(err instanceof Error ? err.message : "Falha na autenticação.");
     }
   }
   return (

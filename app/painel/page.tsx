@@ -65,7 +65,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (loading || !user) return;
-    load().catch(() => setError("Complete seu perfil para acessar suas wishlists."));
+    load().catch((err) => setError(err instanceof Error ? err.message : "Não foi possível carregar suas wishlists."));
   }, [load, loading, user]);
 
   async function createWishlist(event: React.FormEvent) {
@@ -77,8 +77,7 @@ export default function DashboardPage() {
   return (
     <Protected>
       <main className="page dashboard-page">
-        {error && <div className="empty">{error} <Link href="/onboarding">Ir para onboarding</Link></div>}
-        {!data ? <div className="empty">Carregando suas wishlists.</div> : (
+        {error ? <div className="empty">{error} <Link href="/onboarding">Ir para onboarding</Link></div> : !data ? <div className="empty">Carregando suas wishlists.</div> : (
           <>
             <section className="dashboard-mine" aria-labelledby="my-lists-title">
               <div className="dashboard-section-heading">
