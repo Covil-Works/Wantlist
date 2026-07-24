@@ -8,7 +8,7 @@ import { auth } from "@/lib/firebase-client";
 import { useAuth } from "@/components/auth-provider";
 
 export function UserNav() {
-  const { user, loading } = useAuth();
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -30,8 +30,6 @@ export function UserNav() {
       document.removeEventListener("keydown", closeOnEscape);
     };
   }, [open]);
-
-  if (loading) return <nav className="nav"><span className="muted">Carregando</span></nav>;
 
   if (!user) {
     return (
