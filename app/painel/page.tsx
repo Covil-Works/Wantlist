@@ -123,7 +123,7 @@ export default function DashboardPage() {
             <section className="dashboard-following" aria-labelledby="following-title">
               <div className="dashboard-section-heading">
                 <div>
-                  <h2 id="following-title">Wishlists que sigo</h2>
+                  <h2 id="following-title">Listas que eu sigo</h2>
                   <p className="muted">{data.following.length === 0 ? "Listas publicas ou convites aceitos aparecem aqui." : `${data.following.length} ${data.following.length === 1 ? "lista acompanhada" : "listas acompanhadas"}.`}</p>
                 </div>
                 <UsersRound size={22} aria-hidden />
