@@ -27,7 +27,7 @@ export default function SettingsPage() {
   }
   return (
     <Protected>
-      <main className="page stack">
+      <main className="page stack settings-page">
         <h1>Configuracoes da wishlist</h1>
         {!data?.wishlist ? <div className="empty">Crie sua wishlist primeiro.</div> : (
           <>

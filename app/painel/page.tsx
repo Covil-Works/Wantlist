@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { ArrowUpRight, EyeOff, Globe2, ListPlus, LockKeyhole, Settings, UserPlus, UsersRound } from "lucide-react";
+import { ArrowUpRight, EyeOff, Globe2, Heart, ListPlus, LockKeyhole, Settings, UserPlus, UsersRound } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
 import { Protected } from "@/components/protected";
 import { api } from "@/lib/client-api";
@@ -81,7 +81,10 @@ export default function DashboardPage() {
         {!data ? <div className="empty">Carregando suas wishlists.</div> : (
           <>
             <section className="dashboard-mine" aria-labelledby="my-lists-title">
-              <h1 className="dashboard-title" id="my-lists-title">Minhas listas</h1>
+              <div className="dashboard-section-heading">
+                <h1 className="dashboard-title" id="my-lists-title">Minhas listas</h1>
+                <Heart size={22} aria-hidden />
+              </div>
               <div className="dashboard-owned" aria-labelledby="my-wishlist-title">
                 {!data.wishlist ? (
                   <form className="dashboard-create" onSubmit={createWishlist}>
