@@ -27,7 +27,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <header className="topbar">
               <div className="topbar-inner">
                 <Link className="brand" href="/" aria-label="Wantlist">
-                  <Image src="/logo-wishlist.png" alt="" width={74} height={54} priority />
+                  <Image src="/logo-wl.png" alt="" width={74} height={54} priority />
                   <span className="sr-only">Wantlist</span>
                 </Link>
                 <UserNav />
