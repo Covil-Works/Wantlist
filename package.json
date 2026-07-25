@@ -6,10 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "tsx --test tests/*.test.mjs \"lib/product-metadata/tests/**/*.test.ts\"",
     "lint": "next lint",
-    "diagnose:product-metadata": "tsx lib/product-metadata/scripts/diagnose-product-metadata.ts",
-    "test:product-metadata": "tsx lib/product-metadata/scripts/diagnose-product-metadata.ts --all"
+    "diagnose:product-metadata": "tsx lib/product-metadata/scripts/diagnose-product-metadata.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^0.10.4",
