@@ -157,8 +157,8 @@ button, input, textarea, select, a { -webkit-tap-highlight-color: transparent; }
 .dashboard-empty-following { background: #FBF4D5; }
 .wishlist-actions .button, .wishlist-actions .icon-button { background: var(--bg); }
 .wishlist-actions .button:hover, .wishlist-actions .icon-button:hover { background: var(--surface); }
-.wishlist-actions .wishlist-config-button { border-color: var(--dusty-purple); background: var(--dusty-purple); color: #fff; }
-.wishlist-actions .wishlist-config-button:hover { background: #68637F; }
+.wishlist-actions .wishlist-config-button { border-color: var(--line); background: var(--surface-2); color: var(--muted); }
+.wishlist-actions .wishlist-config-button:hover { border-color: var(--dusty-purple); background: var(--surface-2); color: var(--ink); }
 .not-found-page { min-height: calc(100vh - 84px); display: grid; place-items: center; }
 .not-found-panel { width: min(560px, 100%); display: grid; justify-items: start; gap: 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); padding: 32px; }
 .not-found-panel > strong { color: var(--primary); font-size: 14px; font-weight: 850; }

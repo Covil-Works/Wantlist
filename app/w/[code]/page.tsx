@@ -112,7 +112,6 @@ export default function PublicWishlistPage() {
             <>
               <button className="icon-button" title="Copiar link" aria-label="Copiar link" onClick={share}><Share2 size={18} aria-hidden /></button>
               <button className="icon-button" title="Gerar convite" aria-label="Gerar convite" onClick={invite}><MailPlus size={18} aria-hidden /></button>
-              <Link className="button wishlist-config-button" href="/wishlist/configuracoes"><Settings size={17} aria-hidden />Configurar</Link>
               <div className="menu-wrap">
                 <button className="icon-button" title="Alterar visibilidade" aria-label="Alterar visibilidade" onClick={() => setShowVisibilityMenu((value) => !value)}><Eye size={18} aria-hidden /></button>
                 {showVisibilityMenu && (
@@ -131,6 +130,7 @@ export default function PublicWishlistPage() {
                   </div>
                 )}
               </div>
+              <Link className="icon-button wishlist-config-button" href="/wishlist/configuracoes" title="Configurar wishlist" aria-label="Configurar wishlist"><Settings size={18} aria-hidden /></Link>
             </>
           )}
           {!data.isOwner && data.wishlist.visibility === "public" && (
