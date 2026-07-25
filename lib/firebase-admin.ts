@@ -11,7 +11,7 @@ export function adminAuth() {
     const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
     const privateKey = getPrivateKey();
     if (!projectId || !clientEmail || !privateKey) {
-      throw new Error("Firebase Admin nao configurado.");
+      throw new Error("Firebase Admin não configurado.");
     }
     initializeApp({ credential: cert({ projectId, clientEmail, privateKey }) });
   }

@@ -10,12 +10,12 @@ export async function POST(_: Request, { params }: { params: Promise<{ id: strin
   const rows = await sql`select w.* from items i join wishlists w on w.id = i.wishlist_id where i.id = ${id} limit 1`;
   const wishlist = rows[0] as Wishlist | undefined;
   if (!wishlist || !(await canViewWishlist(wishlist, profile))) return NextResponse.json({ error: "Sem acesso." }, { status: 403 });
-  if (wishlist.owner_id === profile.id) return NextResponse.json({ error: "O dono nao pode reservar a propria wishlist." }, { status: 403 });
+  if (wishlist.owner_id === profile.id) return NextResponse.json({ error: "O dono não pode reservar a própria wishlist." }, { status: 403 });
   try {
     await sql`insert into reservations (item_id, user_id) values (${id}, ${profile.id})`;
     return NextResponse.json({ ok: true });
   } catch {
-    return NextResponse.json({ error: "Item ja reservado." }, { status: 409 });
+    return NextResponse.json({ error: "Item já reservado." }, { status: 409 });
   }
 }
 

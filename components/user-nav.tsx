@@ -62,7 +62,7 @@ export function UserNav() {
   return (
     <nav className="nav">
       <div className="menu-wrap" ref={menuRef}>
-        <button className="icon-button" aria-label={open ? "Fechar menu do usuario" : "Abrir menu do usuario"} aria-expanded={open} aria-controls="user-menu" onClick={() => setOpen((value) => !value)}>
+        <button className="icon-button" aria-label={open ? "Fechar menu do usuário" : "Abrir menu do usuário"} aria-expanded={open} aria-controls="user-menu" onClick={() => setOpen((value) => !value)}>
           <CircleUserRound size={19} aria-hidden />
         </button>
         {open && (

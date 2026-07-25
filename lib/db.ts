@@ -2,7 +2,7 @@ import { neon } from "@neondatabase/serverless";
 
 export function getSql() {
   if (!process.env.WANTLIST_DATABASE_URL) {
-    throw new Error("WANTLIST_DATABASE_URL ausente. Configure o Neon nas variaveis de ambiente.");
+    throw new Error("WANTLIST_DATABASE_URL ausente. Configure o Neon nas variáveis de ambiente.");
   }
   return neon(process.env.WANTLIST_DATABASE_URL);
 }

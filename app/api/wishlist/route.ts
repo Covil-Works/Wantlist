@@ -20,9 +20,9 @@ export async function POST(request: Request) {
         if (String(error).includes("owner_id")) throw error;
       }
     }
-    throw new Error("Nao foi possivel gerar um codigo unico.");
+    throw new Error("Não foi possível gerar um código único.");
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Nao foi possivel criar wishlist.";
+    const message = error instanceof Error ? error.message : "Não foi possível criar wishlist.";
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }
@@ -38,7 +38,7 @@ export async function PATCH(request: Request) {
     `;
     return NextResponse.json({ wishlist: rows[0] });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Nao foi possivel atualizar.";
+    const message = error instanceof Error ? error.message : "Não foi possível atualizar.";
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }
