@@ -14,7 +14,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ code: stri
   `;
   const wishlist = rows[0] as Wishlist | undefined;
   if (!wishlist || !(await canViewWishlist(wishlist, profile))) {
-    return NextResponse.json({ error: "Conteudo indisponivel." }, { status: 404 });
+    return NextResponse.json({ error: "Conteúdo indisponível." }, { status: 404 });
   }
   const items = await sql`
     select i.*,

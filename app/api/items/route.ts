@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     `;
     return NextResponse.json({ item: rows[0], duplicate: duplicate.length > 0 });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Nao foi possivel salvar item.";
+    const message = error instanceof Error ? error.message : "Não foi possível salvar item.";
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }

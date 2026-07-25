@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     `;
     return NextResponse.json({ profile: rows[0] });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Nao foi possivel salvar o perfil.";
+    const message = error instanceof Error ? error.message : "Não foi possível salvar o perfil.";
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }

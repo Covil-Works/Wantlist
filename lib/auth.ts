@@ -11,7 +11,7 @@ export async function getBearerToken() {
 
 export async function requireFirebaseUid() {
   const token = await getBearerToken();
-  if (!token) throw new Response("Nao autenticado", { status: 401 });
+  if (!token) throw new Response("Não autenticado", { status: 401 });
   const decoded = await adminAuth().verifyIdToken(token);
   return decoded.uid;
 }

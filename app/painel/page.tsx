@@ -30,7 +30,7 @@ type Dashboard = {
 };
 
 const visibilityLabels: Record<string, string> = {
-  public: "Publica",
+  public: "Pública",
   invited: "Convidados",
   private: "Privada",
 };
@@ -90,10 +90,10 @@ export default function DashboardPage() {
                     <div className="dashboard-owned-copy">
                       <span className="dashboard-label">Sua lista</span>
                       <h2 id="my-wishlist-title">Crie sua wishlist</h2>
-                      <p className="muted">Uma lista unica para organizar produtos de qualquer loja e compartilhar quando quiser.</p>
+                      <p className="muted">Uma lista única para organizar produtos de qualquer loja e compartilhar quando quiser.</p>
                     </div>
                     <div className="dashboard-create-fields">
-                      <label className="field"><span>Titulo</span><input className="input" required value={title} onChange={(e) => setTitle(e.target.value)} /></label>
+                      <label className="field"><span>Título</span><input className="input" required value={title} onChange={(e) => setTitle(e.target.value)} /></label>
                       <label className="field"><span>Visibilidade</span><select className="select" value={visibility} onChange={(e) => setVisibility(e.target.value)}><option value="public">Qualquer pessoa</option><option value="invited">Somente convidados</option><option value="private">Somente eu</option></select></label>
                       <button className="button primary"><ListPlus size={18} aria-hidden />Criar wishlist</button>
                     </div>
@@ -106,7 +106,7 @@ export default function DashboardPage() {
                       <div className="dashboard-owned-details" aria-label="Resumo da minha wishlist">
                         <span><VisibilityIcon value={data.wishlist.visibility} />{visibilityLabel(data.wishlist.visibility)}</span>
                         <span>{data.wishlist.item_count} {data.wishlist.item_count === 1 ? "item" : "itens"}</span>
-                        <span>{Math.max(data.wishlist.item_count - data.wishlist.reserved_count, 0)} disponiveis</span>
+                        <span>{Math.max(data.wishlist.item_count - data.wishlist.reserved_count, 0)} disponíveis</span>
                         <span>{data.wishlist.reserved_count} reservados</span>
                       </div>
                     </div>
@@ -123,13 +123,13 @@ export default function DashboardPage() {
               <div className="dashboard-section-heading">
                 <div>
                   <h2 id="following-title">Listas que eu sigo</h2>
-                  <p className="muted">{data.following.length === 0 ? "Listas publicas ou convites aceitos aparecem aqui." : `${data.following.length} ${data.following.length === 1 ? "lista acompanhada" : "listas acompanhadas"}.`}</p>
+                  <p className="muted">{data.following.length === 0 ? "Listas públicas ou convites aceitos aparecem aqui." : `${data.following.length} ${data.following.length === 1 ? "lista acompanhada" : "listas acompanhadas"}.`}</p>
                 </div>
                 <UsersRound size={22} aria-hidden />
               </div>
 
               {data.following.length === 0 ? (
-                <div className="empty dashboard-empty-following">Nenhuma wishlist acompanhada ainda. Abra uma lista publica ou aceite um convite para acompanhar por aqui.</div>
+                <div className="empty dashboard-empty-following">Nenhuma wishlist acompanhada ainda. Abra uma lista pública ou aceite um convite para acompanhar por aqui.</div>
               ) : (
                 <div className="dashboard-following-list">
                   {data.following.map((w) => (

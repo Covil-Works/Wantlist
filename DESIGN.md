@@ -198,7 +198,7 @@ Wantlist is flat by default and uses tonal layering, borders, and spacing for de
 - **Do** use Petal Pink for primary actions and selected controls.
 - **Do** keep the page on Warm Paper and most cards white so the product remains light and easy on the eyes.
 - **Do** keep wishlist cards and selected item cards white with visible contours; use Dusty Purple tints only for hover feedback on white controls and rows.
-- **Do** pair every state color with text labels like "Disponivel", "Reservado", "Seu", or "Privada".
+- **Do** pair every state color with text labels like "Disponível", "Reservado", "Seu", or "Privada".
 - **Do** keep component geometry consistent: 8px radius for controls, 12px only for softer media containers.
 - **Do** respect reduced motion; the showcase scroll may pause or become manually scrollable.
 

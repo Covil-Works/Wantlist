@@ -7,7 +7,7 @@ export async function POST(_: Request, { params }: { params: Promise<{ code: str
   const { code } = await params;
   const rows = await sql`select id, owner_id, visibility from wishlists where public_code = ${code} limit 1`;
   const wishlist = rows[0];
-  if (!wishlist || wishlist.visibility !== "public" || wishlist.owner_id === profile.id) return NextResponse.json({ error: "Nao e possivel seguir." }, { status: 403 });
+  if (!wishlist || wishlist.visibility !== "public" || wishlist.owner_id === profile.id) return NextResponse.json({ error: "Não é possível seguir." }, { status: 403 });
   await sql`insert into followers (user_id, wishlist_id) values (${profile.id}, ${wishlist.id}) on conflict do nothing`;
   return NextResponse.json({ ok: true });
 }
