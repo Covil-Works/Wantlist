@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { sql } from "@/lib/db";
 import { requireProfile } from "@/lib/auth";
 import { randomCode } from "@/lib/random";
-import { wishlistSchema } from "@/lib/validators";
+import { deleteWishlistSchema, wishlistSchema } from "@/lib/validators";
 
 export async function POST(request: Request) {
   try {
@@ -39,6 +39,25 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ wishlist: rows[0] });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Não foi possível atualizar.";
+    return NextResponse.json({ error: message }, { status: 400 });
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const profile = await requireProfile();
+    const body = deleteWishlistSchema.parse(await request.json());
+    const rows = await sql`
+      delete from wishlists
+      where owner_id = ${profile.id} and title = ${body.title}
+      returning id
+    `;
+    if (!rows[0]) {
+      return NextResponse.json({ error: "Lista não encontrada ou nome diferente." }, { status: 400 });
+    }
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Não foi possível apagar a lista.";
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }

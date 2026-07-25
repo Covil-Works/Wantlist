@@ -4,7 +4,7 @@ export const usernameSchema = z
   .string()
   .trim()
   .toLowerCase()
-  .regex(/^[a-z0-9._-]{3,40}$/, "Use 3 a 40 caracteres: letras, numeros, ponto, hifen ou sublinhado.");
+  .regex(/^[a-z0-9._-]{3,40}$/, "Use 3 a 40 caracteres: letras, números, ponto, hífen ou sublinhado.");
 
 export const profileSchema = z.object({
   displayName: z.string().trim().min(2).max(80),
@@ -14,6 +14,10 @@ export const profileSchema = z.object({
 export const wishlistSchema = z.object({
   title: z.string().trim().min(2).max(100),
   visibility: z.enum(["public", "invited", "private"])
+});
+
+export const deleteWishlistSchema = z.object({
+  title: z.string().trim().min(2).max(100)
 });
 
 export const itemSchema = z.object({

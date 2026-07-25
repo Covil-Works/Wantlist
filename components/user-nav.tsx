@@ -34,23 +34,19 @@ export function UserNav() {
   if (!user) {
     return (
       <nav className="nav">
-        <div className="nav-desktop">
-          <Link className="button" href="/login">Entrar</Link>
-          <Link className="button primary" href="/cadastro">Cadastro</Link>
-        </div>
         <div className="menu-wrap" ref={menuRef}>
-          <button className="icon-button nav-menu-button" aria-label={open ? "Fechar menu" : "Abrir menu"} aria-expanded={open} aria-controls="guest-menu" onClick={() => setOpen((value) => !value)}>
+          <button className="icon-button" aria-label={open ? "Fechar menu" : "Abrir menu"} aria-expanded={open} aria-controls="guest-menu" onClick={() => setOpen((value) => !value)}>
             {open ? <X size={18} aria-hidden /> : <Menu size={18} aria-hidden />}
           </button>
           {open && (
-            <div className="dropdown-menu nav-mobile-menu" id="guest-menu" role="menu">
+            <div className="dropdown-menu nav-guest-menu" id="guest-menu" role="menu">
               <Link className="menu-option" href="/login" onClick={() => setOpen(false)} role="menuitem">
                 <UserRound size={18} aria-hidden />
                 <span><strong>Entrar</strong></span>
               </Link>
               <Link className="menu-option" href="/cadastro" onClick={() => setOpen(false)} role="menuitem">
                 <CircleUserRound size={18} aria-hidden />
-                <span><strong>Cadastro</strong></span>
+                <span><strong>Criar conta</strong></span>
               </Link>
             </div>
           )}
