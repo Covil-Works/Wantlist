@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ArrowUpRight, Eye, EyeOff, Globe2, MailPlus, MoreHorizontal, Plus, Share2, Trash2, UserPlus, X } from "lucide-react";
+import { ArrowUpRight, Eye, EyeOff, Globe2, Home, MailPlus, MoreHorizontal, Plus, Share2, Trash2, UserPlus, X } from "lucide-react";
 import { api } from "@/lib/client-api";
 import { useAuth } from "@/components/auth-provider";
 import { ItemForm } from "@/components/item-form";
@@ -17,6 +17,19 @@ const visibilityOptions = [
 
 function visibilityLabel(value: string) {
   return visibilityOptions.find((option) => option.value === value)?.label || value;
+}
+
+function ContentNotFound() {
+  return (
+    <main className="page not-found-page">
+      <section className="not-found-panel">
+        <strong>404</strong>
+        <h1>Conteúdo não encontrado</h1>
+        <p>Este conteúdo não existe ou não está disponível.</p>
+        <Link className="button primary" href="/"><Home size={18} aria-hidden />Voltar para a página inicial</Link>
+      </section>
+    </main>
+  );
 }
 
 export default function PublicWishlistPage() {
@@ -34,8 +47,9 @@ export default function PublicWishlistPage() {
 
   async function load() {
     setError("");
+    setData(null);
     try { setData(await api(`/api/wishlist/${code}`)); }
-    catch { setError("Conteúdo indisponível ou sem permissão."); }
+    catch { setError("not-found"); }
   }
 
   useEffect(() => { if (!loading) load(); }, [code, loading, user]);
@@ -82,7 +96,7 @@ export default function PublicWishlistPage() {
   }
 
   if (loading || (!data && !error)) return <main className="page"><div className="empty">Carregando wishlist.</div></main>;
-  if (error) return <main className="page"><div className="empty">{error}</div></main>;
+  if (error) return <ContentNotFound />;
 
   return (
     <main className="page stack">

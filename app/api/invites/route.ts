@@ -28,6 +28,15 @@ export async function POST() {
   const wishlist = wishlists[0];
   if (!wishlist) return NextResponse.json({ error: "Crie uma wishlist primeiro." }, { status: 400 });
   const token = randomCode(24);
-  await sql`insert into invites (wishlist_id, token_hash) values (${wishlist.id}, ${hashToken(token)})`;
+  await sql`
+    with revoked as (
+      update invites
+      set status = 'revoked', revoked_at = now()
+      where wishlist_id = ${wishlist.id} and status = 'pending'
+      returning id
+    )
+    insert into invites (wishlist_id, token_hash)
+    values (${wishlist.id}, ${hashToken(token)})
+  `;
   return NextResponse.json({ token, url: `/convite/${token}` });
 }

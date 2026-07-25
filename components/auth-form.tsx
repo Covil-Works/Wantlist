@@ -13,6 +13,8 @@ export function AuthForm({ mode }: { mode: "login" | "signup" | "reset" }) {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const router = useRouter();
+  const nextPath = typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("next");
+  const safeNextPath = nextPath?.startsWith("/") && !nextPath.startsWith("//") ? nextPath : null;
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     setError(""); setMessage("");
@@ -28,12 +30,12 @@ export function AuthForm({ mode }: { mode: "login" | "signup" | "reset" }) {
       }
       if (mode === "signup") {
         await createUserWithEmailAndPassword(auth, email, password);
-        router.push("/onboarding");
+        router.push(`/onboarding${safeNextPath ? `?next=${encodeURIComponent(safeNextPath)}` : ""}`);
         return;
       }
       await signInWithEmailAndPassword(auth, email, password);
       const { profile } = await api("/api/profile");
-      router.push(profile ? "/painel" : "/onboarding");
+      router.push(profile ? safeNextPath || "/painel" : `/onboarding${safeNextPath ? `?next=${encodeURIComponent(safeNextPath)}` : ""}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Falha na autenticação.");
     }

@@ -10,14 +10,16 @@ export default function OnboardingPage() {
   const [username, setUsername] = useState("");
   const [error, setError] = useState("");
   const router = useRouter();
+  const nextPath = typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("next");
+  const safeNextPath = nextPath?.startsWith("/") && !nextPath.startsWith("//") ? nextPath : null;
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     setError("");
     try {
       await api("/api/profile", { method: "POST", body: JSON.stringify({ displayName, username }) });
-      router.push("/painel");
+      router.push(safeNextPath || "/painel");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Nao foi possivel salvar.");
+      setError(err instanceof Error ? err.message : "Não foi possível salvar.");
     }
   }
   return (
@@ -25,8 +27,8 @@ export default function OnboardingPage() {
       <main className="page stack">
         <h1>Complete seu perfil</h1>
         <form className="panel stack" onSubmit={submit}>
-          <label className="field"><span>Nome de exibicao</span><input className="input" required value={displayName} onChange={(e) => setDisplayName(e.target.value)} /></label>
-          <label className="field"><span>Nome de usuario</span><input className="input" required value={username} onChange={(e) => setUsername(e.target.value)} /></label>
+          <label className="field"><span>Nome de exibição</span><input className="input" required value={displayName} onChange={(e) => setDisplayName(e.target.value)} /></label>
+          <label className="field"><span>Nome de usuário</span><input className="input" required value={username} onChange={(e) => setUsername(e.target.value)} /></label>
           {error && <p className="error">{error}</p>}
           <button className="button primary">Salvar perfil</button>
         </form>
