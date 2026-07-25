@@ -70,10 +70,7 @@ export function ItemForm({ onSaved, onCancel }: { onSaved: () => void; onCancel?
 
         const data = response.data ?? {};
         if (data.title) setName(data.title);
-        if (data.description) {
-          setDescription(data.description);
-          setShowDescription(true);
-        }
+
         if (data.imageUrl) {
           setImageUrl(data.imageUrl);
           setImageFailed(false);
