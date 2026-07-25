@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ImageOff, Loader2, X } from "lucide-react";
 import { api } from "@/lib/client-api";
+import { resolveProductName } from "@/lib/product-url";
 
 type ExtractionState = "idle" | "loading" | "success" | "partial" | "not_found" | "timeout" | "invalid_url" | "redirect_failed" | "error";
 
@@ -52,6 +53,9 @@ export function ItemForm({ onSaved, onCancel }: { onSaved: () => void; onCancel?
       setExtractionState("idle");
       return;
     }
+
+    const parsedName = resolveProductName(trimmedUrl);
+    if (parsedName) setName(parsedName);
 
     const requestId = requestRef.current + 1;
     requestRef.current = requestId;

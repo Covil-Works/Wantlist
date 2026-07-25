@@ -46,6 +46,24 @@ test("parser da Centauro extrai o mesmo nome nas duas URLs fornecidas", () => {
   }
 });
 
+test("parser da Amazon usa slug descritivo antes de segmentos técnicos", () => {
+  assert.equal(
+    resolveProductNameFromRegisteredStores("https://www.amazon.com.br/Echo-Dot-5%C2%AA-gera%C3%A7%C3%A3o-Cor-Preta/dp/B09B8V1LZ3"),
+    "Echo Dot 5ª geração Cor Preta"
+  );
+  assert.equal(resolveProductNameFromRegisteredStores("https://www.amazon.com.br/dp/B09B8V1LZ3"), null);
+});
+
+test("orquestrador executa parser de URL antes de validação externa em loja catalogada", async () => {
+  const result = await extractProductMetadata("https://www.amazon.com.br/Echo-Dot-5%C2%AA-gera%C3%A7%C3%A3o-Cor-Preta/dp/B09B8V1LZ3", {
+    useCache: false,
+    validateUrl: async () => ({ ok: false as const, errorCode: "dns_failed" })
+  });
+
+  assert.equal(result.status, "invalid_url");
+  assert.equal(result.data.title, "Echo Dot 5ª geração Cor Preta");
+  assert.equal(result.fieldSources.title, "url-parser");
+});
 test("resolve lojas e domínios encurtados cadastrados", () => {
   assert.equal(resolveStoreByHostname("www.centauro.com.br").id, "centauro");
   assert.equal(resolveStoreByHostname("centauro.com.br").id, "centauro");

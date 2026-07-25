@@ -89,43 +89,45 @@ export async function extractProductMetadata(
   const urlType = shortStore ? "shortened" : "normal";
   let finalUrl = normalized.url;
   let store = shortStore ?? originalStore;
+  const data: ProductMetadata = {
+    originalUrl,
+    resolvedUrl: normalized.url.toString(),
+    storeId: store.id
+  };
+
+  if (store.urlTitleParser && urlType === "normal") {
+    const title = store.urlTitleParser.parse(normalized.url);
+    if (title) mergeMetadata(data, { title, source: "url-parser" }, fieldSources, "url-parser");
+  }
 
   const validateUrl = options.validateUrl ?? validateExternalUrl;
   const originalValidation = await validateUrl(normalized.url);
   if (!originalValidation.ok) {
-    return { status: "invalid_url", data: {}, attempts, skippedStrategies, fieldSources, urlType, durationMs: Date.now() - startedAt, errorCode: originalValidation.errorCode };
+    return { status: "invalid_url", data, attempts, skippedStrategies, fieldSources, urlType, durationMs: Date.now() - startedAt, errorCode: originalValidation.errorCode };
   }
 
   if (urlType === "shortened") {
     const resolution = await resolveShortLink(normalized.url, { fetchImpl: options.fetchImpl, signal, validateUrl });
     if (!resolution.ok) {
-      return { status: "redirect_failed", data: { originalUrl, storeId: store.id }, attempts, skippedStrategies, fieldSources, urlType, durationMs: Date.now() - startedAt, errorCode: resolution.errorCode };
+      return { status: "redirect_failed", data, attempts, skippedStrategies, fieldSources, urlType, durationMs: Date.now() - startedAt, errorCode: resolution.errorCode };
     }
     finalUrl = resolution.finalUrl;
     store = resolveStoreByHostname(finalUrl.hostname);
     if (store.id === "generic") store = shortStore ?? store;
+    data.resolvedUrl = finalUrl.toString();
+    data.storeId = store.id;
+
+    const finalValidation = await validateUrl(finalUrl);
+    if (!finalValidation.ok) {
+      return { status: "invalid_url", data, attempts, skippedStrategies, fieldSources, urlType, durationMs: Date.now() - startedAt, errorCode: finalValidation.errorCode };
+    }
+
+    if (store.urlTitleParser) {
+      const title = store.urlTitleParser.parse(finalUrl);
+      if (title) mergeMetadata(data, { title, source: "url-parser" }, fieldSources, "url-parser");
+    }
   } else if (isKnownShortHostname(normalized.url.hostname)) {
     skippedStrategies.push("url-parser");
-  }
-
-  const finalValidation = await validateUrl(finalUrl);
-  if (!finalValidation.ok) {
-    return { status: "invalid_url", data: {}, attempts, skippedStrategies, fieldSources, urlType, durationMs: Date.now() - startedAt, errorCode: finalValidation.errorCode };
-  }
-
-  const data: ProductMetadata = {
-    originalUrl,
-    resolvedUrl: finalUrl.toString(),
-    storeId: store.id
-  };
-
-  if (store.urlTitleParser && urlType === "normal") {
-    const title = store.urlTitleParser.parse(finalUrl);
-    if (title) mergeMetadata(data, { title, source: "url-parser" }, fieldSources, "url-parser");
-  }
-  if (store.urlTitleParser && urlType === "shortened") {
-    const title = store.urlTitleParser.parse(finalUrl);
-    if (title) mergeMetadata(data, { title, source: "url-parser" }, fieldSources, "url-parser");
   }
 
   const registry = options.strategyRegistry ?? PRODUCT_METADATA_STRATEGIES;

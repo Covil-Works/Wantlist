@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireProfile } from "@/lib/auth";
 import { extractProductMetadata } from "@/lib/product-metadata/services/product-metadata-extractor";
@@ -15,7 +15,7 @@ export async function POST(request: Request) {
     request.signal.addEventListener("abort", () => controller.abort(), { once: true });
     const result = await extractProductMetadata(body.url, { signal: controller.signal });
 
-    if (result.status === "invalid_url") return NextResponse.json({ status: "invalid_url", data: {} }, { status: 400 });
+    if (result.status === "invalid_url") return NextResponse.json({ status: "invalid_url", data: result.data }, { status: 400 });
     if (result.status === "redirect_failed") return NextResponse.json({ status: "redirect_failed", data: result.data }, { status: 200 });
     if (result.status === "not_found") return NextResponse.json({ status: "not_found", data: result.data }, { status: 200 });
     if (result.status === "timeout") return NextResponse.json({ status: "timeout", data: result.data }, { status: 200 });
