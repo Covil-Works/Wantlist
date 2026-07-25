@@ -1,8 +1,9 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useRef, useState } from "react";
 import { ImageOff, Loader2, X } from "lucide-react";
 import { api } from "@/lib/client-api";
+import { normalizeProductUrl } from "@/lib/product-metadata/services/normalize-product-url";
 import { resolveProductName } from "@/lib/product-url";
 
 type ExtractionState = "idle" | "loading" | "success" | "partial" | "not_found" | "timeout" | "invalid_url" | "redirect_failed" | "error";
@@ -15,15 +16,6 @@ type ExtractResponse = {
     imageUrl?: string;
   };
 };
-
-function isProbablyUrl(value: string) {
-  try {
-    const url = new URL(value.trim());
-    return url.protocol === "http:" || url.protocol === "https:";
-  } catch {
-    return false;
-  }
-}
 
 function statusMessage(state: ExtractionState) {
   if (state === "loading") return "Extraindo informações...";
@@ -47,14 +39,15 @@ export function ItemForm({ onSaved, onCancel }: { onSaved: () => void; onCancel?
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
-    const trimmedUrl = originalUrl.trim();
-    if (!isProbablyUrl(trimmedUrl)) {
+    const normalized = normalizeProductUrl(originalUrl);
+    if (!normalized.ok) {
       abortRef.current?.abort();
       setExtractionState("idle");
       return;
     }
 
-    const parsedName = resolveProductName(trimmedUrl);
+    const normalizedUrl = normalized.normalizedUrl;
+    const parsedName = resolveProductName(normalizedUrl);
     if (parsedName) setName(parsedName);
 
     const requestId = requestRef.current + 1;
@@ -70,7 +63,7 @@ export function ItemForm({ onSaved, onCancel }: { onSaved: () => void; onCancel?
       try {
         const response = await api("/api/product-metadata/extract", {
           method: "POST",
-          body: JSON.stringify({ url: trimmedUrl }),
+          body: JSON.stringify({ url: normalizedUrl }),
           signal: controller.signal
         }) as ExtractResponse;
         if (requestRef.current !== requestId || controller.signal.aborted) return;
@@ -104,9 +97,14 @@ export function ItemForm({ onSaved, onCancel }: { onSaved: () => void; onCancel?
     event.preventDefault();
     setError("");
     try {
+      const normalized = normalizeProductUrl(originalUrl);
+      if (!normalized.ok) {
+        setError("Informe uma URL de produto válida.");
+        return;
+      }
       const data = await api("/api/items", {
         method: "POST",
-        body: JSON.stringify({ name, description: showDescription ? description : "", imageUrl, originalUrl })
+        body: JSON.stringify({ name, description: showDescription ? description : "", imageUrl, originalUrl: normalized.normalizedUrl })
       });
       setMessage(data.duplicate ? "Item salvo. Aviso: essa URL já existia na wishlist." : "Item salvo.");
       setOriginalUrl(""); setName(""); setDescription(""); setImageUrl(""); setShowDescription(false); setExtractionState("idle");

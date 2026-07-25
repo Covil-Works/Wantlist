@@ -4,10 +4,16 @@ export type NormalizedProductUrl =
   | { ok: true; url: URL; normalizedUrl: string }
   | { ok: false; errorCode: "invalid_url" | "invalid_protocol" };
 
+function withDefaultProtocol(input: string) {
+  const trimmed = input.trim();
+  if (/^[a-z][a-z\d+.-]*:\/\//i.test(trimmed)) return trimmed;
+  return `https://${trimmed}`;
+}
+
 export function normalizeProductUrl(input: string): NormalizedProductUrl {
   let url: URL;
   try {
-    url = new URL(input.trim());
+    url = new URL(withDefaultProtocol(input));
   } catch {
     return { ok: false, errorCode: "invalid_url" };
   }
