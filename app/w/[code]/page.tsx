@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ArrowUpRight, Eye, EyeOff, Globe2, Home, MailPlus, MoreHorizontal, Plus, Share2, Trash2, UserPlus, X } from "lucide-react";
+import { ArrowUpRight, Eye, EyeOff, Globe2, Home, MailPlus, MoreHorizontal, Plus, Settings, Share2, Trash2, UserPlus, X } from "lucide-react";
 import { api } from "@/lib/client-api";
 import { useAuth } from "@/components/auth-provider";
 import { ItemForm } from "@/components/item-form";
@@ -112,6 +112,7 @@ export default function PublicWishlistPage() {
             <>
               <button className="icon-button" title="Copiar link" aria-label="Copiar link" onClick={share}><Share2 size={18} aria-hidden /></button>
               <button className="icon-button" title="Gerar convite" aria-label="Gerar convite" onClick={invite}><MailPlus size={18} aria-hidden /></button>
+              <Link className="button wishlist-config-button" href="/wishlist/configuracoes"><Settings size={17} aria-hidden />Configurar</Link>
               <div className="menu-wrap">
                 <button className="icon-button" title="Alterar visibilidade" aria-label="Alterar visibilidade" onClick={() => setShowVisibilityMenu((value) => !value)}><Eye size={18} aria-hidden /></button>
                 {showVisibilityMenu && (

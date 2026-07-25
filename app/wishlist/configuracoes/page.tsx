@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Copy, RefreshCw, Trash2, UserPlus, XCircle } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { AlertTriangle, Copy, RefreshCw, Trash2, UserPlus, XCircle } from "lucide-react";
 import { Protected } from "@/components/protected";
 import { api } from "@/lib/client-api";
 
@@ -28,6 +29,7 @@ const inviteStatusLabels: Record<string, string> = {
 };
 
 export default function SettingsPage() {
+  const router = useRouter();
   const [data, setData] = useState<any>(null);
   const [title, setTitle] = useState("");
   const [visibility, setVisibility] = useState("public");
@@ -36,6 +38,9 @@ export default function SettingsPage() {
   const [inviteUrl, setInviteUrl] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [deleteStep, setDeleteStep] = useState<"idle" | "confirm" | "type">("idle");
+  const [deleteConfirmName, setDeleteConfirmName] = useState("");
+  const [deleting, setDeleting] = useState(false);
 
   const currentInvite = useMemo(() => invites[0] || null, [invites]);
   const activeGuests = guests.filter((guest) => guest.status === "active");
@@ -97,6 +102,21 @@ export default function SettingsPage() {
     setMessage("Link de convite copiado.");
   }
 
+  async function deleteWishlist(event: React.FormEvent) {
+    event.preventDefault();
+    if (!data?.wishlist || deleteConfirmName !== data.wishlist.title) return;
+    setDeleting(true);
+    setMessage("");
+    setError("");
+    try {
+      await api("/api/wishlist", { method: "DELETE", body: JSON.stringify({ title: deleteConfirmName }) });
+      router.push("/painel");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não foi possível apagar a lista.");
+      setDeleting(false);
+    }
+  }
+
   return (
     <Protected>
       <main className="page stack settings-page">
@@ -139,6 +159,39 @@ export default function SettingsPage() {
                 <p className="muted"><UserPlus size={16} aria-hidden /> Convidados removidos perdem o acesso imediatamente e só voltam com um novo convite.</p>
               </section>
             )}
+            <section className="panel stack danger-zone" aria-labelledby="delete-wishlist-title">
+              <div className="danger-heading">
+                <div>
+                  <h2 id="delete-wishlist-title">Apagar lista</h2>
+                  <p className="muted">Essa ação apaga a lista, os itens, convites, seguidores e reservas vinculados a ela.</p>
+                </div>
+                <AlertTriangle size={20} aria-hidden />
+              </div>
+              {deleteStep === "idle" && (
+                <button className="button danger delete-list-button" onClick={() => setDeleteStep("confirm")}><Trash2 size={17} aria-hidden />Apagar lista</button>
+              )}
+              {deleteStep === "confirm" && (
+                <div className="delete-confirmation">
+                  <strong>Quer mesmo apagar a lista?</strong>
+                  <div className="row">
+                    <button className="button danger" onClick={() => setDeleteStep("type")}>Sim</button>
+                    <button className="button" onClick={() => setDeleteStep("idle")}>Não</button>
+                  </div>
+                </div>
+              )}
+              {deleteStep === "type" && (
+                <form className="delete-confirmation" onSubmit={deleteWishlist}>
+                  <label className="field">
+                    <span>Digite <strong>{data.wishlist.title}</strong> para confirmar</span>
+                    <input className="input" value={deleteConfirmName} onChange={(event) => setDeleteConfirmName(event.target.value)} />
+                  </label>
+                  <div className="row">
+                    <button className="button danger" disabled={deleteConfirmName !== data.wishlist.title || deleting}><Trash2 size={17} aria-hidden />{deleting ? "Apagando..." : "Apagar definitivamente"}</button>
+                    <button className="button" type="button" onClick={() => { setDeleteStep("idle"); setDeleteConfirmName(""); }} disabled={deleting}>Cancelar</button>
+                  </div>
+                </form>
+              )}
+            </section>
           </>
         )}
       </main>
