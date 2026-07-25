@@ -5,13 +5,18 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { api } from "@/lib/client-api";
 
+function currentPath() {
+  if (typeof window === "undefined") return "/";
+  return `${window.location.pathname}${window.location.search}`;
+}
+
 export function Protected({ children, requireProfile = true }: { children: React.ReactNode; requireProfile?: boolean }) {
   const { user, loading } = useAuth();
   const [checkingProfile, setCheckingProfile] = useState(requireProfile);
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && !user) router.replace("/login");
+    if (!loading && !user) router.replace(`/login?next=${encodeURIComponent(currentPath())}`);
   }, [loading, user, router]);
 
   useEffect(() => {
@@ -27,7 +32,7 @@ export function Protected({ children, requireProfile = true }: { children: React
       .then(({ profile }) => {
         if (!active) return;
         if (!profile) {
-          router.replace("/onboarding");
+          router.replace(`/onboarding?next=${encodeURIComponent(currentPath())}`);
           return;
         }
         setCheckingProfile(false);
@@ -41,7 +46,7 @@ export function Protected({ children, requireProfile = true }: { children: React
     };
   }, [loading, user, requireProfile, router]);
 
-  if (loading || checkingProfile) return <main className="page"><div className="empty">Carregando sua sessao.</div></main>;
+  if (loading || checkingProfile) return <main className="page"><div className="empty">Carregando sua sessão.</div></main>;
   if (!user) return null;
   return children;
 }

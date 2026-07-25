@@ -155,6 +155,19 @@ button, input, textarea, select, a { -webkit-tap-highlight-color: transparent; }
 .dashboard-empty-following { background: #FBF4D5; }
 .wishlist-actions .button, .wishlist-actions .icon-button { background: var(--bg); }
 .wishlist-actions .button:hover, .wishlist-actions .icon-button:hover { background: var(--surface); }
+.not-found-page { min-height: calc(100vh - 84px); display: grid; place-items: center; }
+.not-found-panel { width: min(560px, 100%); display: grid; justify-items: start; gap: 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); padding: 32px; }
+.not-found-panel > strong { color: var(--primary); font-size: 14px; font-weight: 850; }
+.not-found-panel h1 { margin: 0; font-size: 32px; line-height: 1.15; letter-spacing: 0; }
+.not-found-panel p { margin: 0 0 4px; color: var(--muted); }
+.guest-panel h2 { margin: 0; font-size: 22px; line-height: 1.2; }
+.guest-invite-state { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.invite-copy-row { display: grid; grid-template-columns: minmax(0, 1fr) 40px; gap: 8px; align-items: center; }
+.guest-list { display: grid; gap: 8px; }
+.guest-row { display: grid; grid-template-columns: minmax(0, 1fr) 40px; gap: 12px; align-items: center; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); padding: 12px; }
+.guest-row > div { min-width: 0; display: grid; gap: 3px; }
+.guest-row strong, .guest-row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.guest-panel .muted { display: inline-flex; gap: 6px; align-items: center; }
 @media (max-width: 760px) {
   .hero { grid-template-columns: 1fr; padding-top: 30px; }
   .hero h1 { font-size: 40px; }
