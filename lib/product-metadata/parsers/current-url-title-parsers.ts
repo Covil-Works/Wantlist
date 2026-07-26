@@ -17,5 +17,14 @@ export const magaluUrlTitleParser = createSlugParser(
 
 export const sephoraUrlTitleParser = createSlugParser(
   "sephora-url-title-parser",
-  (url) => pathSegmentAfter(url, "product")?.replace(/-P\d+$/i, "") || null
+  (url) => {
+    const productSlug = pathSegmentAfter(url, "product")?.replace(/-P\d+$/i, "");
+    const directSlug = url.pathname
+      .split("/")
+      .filter(Boolean)
+      .at(-1)
+      ?.replace(/(?:-\d+){1,}\.html$/i, "");
+
+    return productSlug || directSlug || null;
+  }
 );

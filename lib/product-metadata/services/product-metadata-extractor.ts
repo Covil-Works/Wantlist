@@ -1,4 +1,4 @@
-﻿import { PRODUCT_METADATA_STRATEGY_TIMEOUT_MS, PRODUCT_METADATA_TIMEOUT_MS } from "../config";
+import { PRODUCT_METADATA_STRATEGY_TIMEOUT_MS, PRODUCT_METADATA_TIMEOUT_MS } from "../config";
 import type {
   ExtractProductMetadataResult,
   ExtractionAttempt,
@@ -24,22 +24,98 @@ function composeSignals(signals: AbortSignal[]) {
   }
   return controller.signal;
 }
+const HTML_ENTITIES: Record<string, string> = {
+  amp: "&",
+  apos: "'",
+  quot: '"',
+  nbsp: " ",
+  lt: "<",
+  gt: ">",
+  aacute: "á",
+  agrave: "à",
+  acirc: "â",
+  atilde: "ã",
+  ccedil: "ç",
+  eacute: "é",
+  ecirc: "ê",
+  iacute: "í",
+  oacute: "ó",
+  ocirc: "ô",
+  otilde: "õ",
+  uacute: "ú",
+  Aacute: "Á",
+  Agrave: "À",
+  Acirc: "Â",
+  Atilde: "Ã",
+  Ccedil: "Ç",
+  Eacute: "É",
+  Ecirc: "Ê",
+  Iacute: "Í",
+  Oacute: "Ó",
+  Ocirc: "Ô",
+  Otilde: "Õ",
+  Uacute: "Ú"
+};
+
+function decodeHtmlEntities(value: string) {
+  return value.replace(/&(#\d+|#x[\da-f]+|[a-z]+);/gi, (entity, code: string) => {
+    if (code.startsWith("#x")) return String.fromCodePoint(Number.parseInt(code.slice(2), 16));
+    if (code.startsWith("#")) return String.fromCodePoint(Number.parseInt(code.slice(1), 10));
+    return HTML_ENTITIES[code] ?? entity;
+  });
+}
+
+function normalizeText(value: string) {
+  return decodeHtmlEntities(value)
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function sanitizeTitle(title: string, storeId?: string) {
+  const normalized = normalizeText(title)
+    .replace(/^[-|:]+\s*/, "")
+    .replace(/\s+\|\s+Amazon\.com\.br$/i, "")
+    .trim();
+
+  if (!normalized || normalized === "Amazon.com.br") return undefined;
+  if (storeId === "sephora" && normalized.includes("�")) return undefined;
+  return normalized;
+}
+
+function sanitizeDescription(description: string, storeId?: string) {
+  const normalized = normalizeText(description);
+  if (!normalized) return undefined;
+  if (storeId === "shein" && /De sapatos a roupas.*podem ser encontradas online em SHEIN/i.test(normalized)) return undefined;
+  if (storeId === "amazon" && /^Compre online .+ na Amazon\./i.test(normalized)) return undefined;
+  return normalized;
+}
+
+function sanitizeMetadataForStore(incoming: Partial<ProductMetadata>, storeId?: string): Partial<ProductMetadata> {
+  return {
+    ...incoming,
+    ...(incoming.title ? { title: sanitizeTitle(incoming.title, storeId) } : {}),
+    ...(incoming.description ? { description: sanitizeDescription(incoming.description, storeId) } : {})
+  };
+}
 
 function mergeMetadata(
   target: ProductMetadata,
   incoming: Partial<ProductMetadata>,
   fieldSources: ExtractProductMetadataResult["fieldSources"],
-  source: string
+  source: string,
+  storeId?: string
 ) {
+  const sanitized = sanitizeMetadataForStore(incoming, storeId);
+
   for (const field of MERGE_FIELDS) {
-    if (!target[field] && incoming[field]) {
-      target[field] = incoming[field] as string;
+    if (!target[field] && sanitized[field]) {
+      target[field] = sanitized[field] as string;
       fieldSources[field] = source;
     }
   }
-  if (incoming.resolvedUrl && !target.resolvedUrl) target.resolvedUrl = incoming.resolvedUrl;
-  if (incoming.canonicalUrl && !target.canonicalUrl) target.canonicalUrl = incoming.canonicalUrl;
-  if (incoming.storeId && !target.storeId) target.storeId = incoming.storeId;
+  if (sanitized.resolvedUrl && !target.resolvedUrl) target.resolvedUrl = sanitized.resolvedUrl;
+  if (sanitized.canonicalUrl && !target.canonicalUrl) target.canonicalUrl = sanitized.canonicalUrl;
+  if (sanitized.storeId && !target.storeId) target.storeId = sanitized.storeId;
 }
 
 function classifyFinalStatus(data: ProductMetadata, attempts: ExtractionAttempt[], timedOut: boolean): ExtractProductMetadataResult["status"] {
@@ -97,7 +173,7 @@ export async function extractProductMetadata(
 
   if (store.urlTitleParser && urlType === "normal") {
     const title = store.urlTitleParser.parse(normalized.url);
-    if (title) mergeMetadata(data, { title, source: "url-parser" }, fieldSources, "url-parser");
+    if (title) mergeMetadata(data, { title, source: "url-parser" }, fieldSources, "url-parser", store.id);
   }
 
   const validateUrl = options.validateUrl ?? validateExternalUrl;
@@ -124,7 +200,7 @@ export async function extractProductMetadata(
 
     if (store.urlTitleParser) {
       const title = store.urlTitleParser.parse(finalUrl);
-      if (title) mergeMetadata(data, { title, source: "url-parser" }, fieldSources, "url-parser");
+      if (title) mergeMetadata(data, { title, source: "url-parser" }, fieldSources, "url-parser", store.id);
     }
   } else if (isKnownShortHostname(normalized.url.hostname)) {
     skippedStrategies.push("url-parser");
@@ -153,7 +229,7 @@ export async function extractProductMetadata(
       fetchImpl: options.fetchImpl
     });
     attempts.push(result.attempt);
-    mergeMetadata(data, result.metadata, fieldSources, strategy.id);
+    mergeMetadata(data, result.metadata, fieldSources, strategy.id, store.id);
   }
 
   const result: ExtractProductMetadataResult = {

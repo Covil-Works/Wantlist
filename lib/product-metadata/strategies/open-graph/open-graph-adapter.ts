@@ -10,8 +10,7 @@ function firstString(...values: unknown[]) {
   return undefined;
 }
 
-function normalizeImageValue(value: unknown, baseUrl: string): string | undefined {
-  const candidate = Array.isArray(value) ? value[0] : value;
+function imageCandidateUrl(candidate: unknown, baseUrl: string) {
   if (!candidate) return undefined;
   if (typeof candidate === "string") return absoluteUrl(candidate, baseUrl);
   if (typeof candidate === "object") {
@@ -19,6 +18,34 @@ function normalizeImageValue(value: unknown, baseUrl: string): string | undefine
     return absoluteUrl(firstString(record.url, record.secureUrl, record.secure_url, record.image, record.href), baseUrl);
   }
   return undefined;
+}
+
+function imageScore(url: string) {
+  const lower = url.toLowerCase();
+  if (/\.(svg|gif)(\?|$)/i.test(lower)) return -1;
+  if (/sprite|nav-sprite|logo-|home-banners-site-app|trade-marketing|paginas_institucionais|lp-rappi|menu_/i.test(lower)) return -1;
+
+  let score = 0;
+  if (/\.(jpe?g|png|webp)(\?|$)/i.test(lower)) score += 20;
+  if (lower.includes("/images/i/")) score += 40;
+  if (/_ac_s[rx]\d+|_sl\d+|_sx\d+|_sy\d+/i.test(url)) score += 20;
+  if (/_ac_sr\d+,\d+/i.test(url)) score -= 30;
+  return score;
+}
+
+function normalizeImageValue(value: unknown, baseUrl: string): string | undefined {
+  const candidates = Array.isArray(value) ? value : [value];
+  let best: { url: string; score: number } | null = null;
+
+  for (const candidate of candidates) {
+    const url = imageCandidateUrl(candidate, baseUrl);
+    if (!url) continue;
+    const score = imageScore(url);
+    if (score < 0) continue;
+    if (!best || score > best.score) best = { url, score };
+  }
+
+  return best?.url;
 }
 
 function absoluteUrl(value: string | undefined, baseUrl: string) {

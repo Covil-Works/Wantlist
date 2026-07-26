@@ -1,4 +1,4 @@
-﻿import type { StoreExtractorConfig } from "../domain/product-metadata.types";
+import type { StoreExtractorConfig } from "../domain/product-metadata.types";
 import { amazonUrlTitleParser } from "../parsers/amazon-url-title-parser";
 import { centauroUrlTitleParser } from "../parsers/centauro-url-title-parser";
 import { magaluUrlTitleParser, sephoraUrlTitleParser, sheinUrlTitleParser, shopeeUrlTitleParser } from "../parsers/current-url-title-parsers";
@@ -11,7 +11,7 @@ export const STORE_CONFIGS: StoreExtractorConfig[] = [
     hostnames: ["amazon.com.br", "www.amazon.com.br", "amazon.com", "www.amazon.com"],
     shortHostnames: ["a.co"],
     urlTitleParser: amazonUrlTitleParser,
-    openGraphStrategies: ["DEFAULT", "BROWSER", "SOCIAL_FACEBOOK", "SOCIAL_WHATSAPP"]
+    openGraphStrategies: ["BROWSER", "DEFAULT", "SOCIAL_FACEBOOK", "SOCIAL_WHATSAPP"]
   },
   {
     id: "mercado-livre",
