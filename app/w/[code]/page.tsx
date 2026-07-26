@@ -174,17 +174,6 @@ export default function PublicWishlistPage() {
             <article
               className={`item-row${expanded ? " expanded" : ""}`}
               key={item.id}
-              role="button"
-              tabIndex={0}
-              aria-expanded={expanded}
-              aria-controls={detailsId}
-              onClick={() => toggleItem(item.id)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ") {
-                  event.preventDefault();
-                  toggleItem(item.id);
-                }
-              }}
             >
               {item.image_url ? <Image className="item-row-image" src={item.image_url} alt="" width={88} height={88} unoptimized /> : <div className="item-row-image" />}
               <div className="item-row-copy">
@@ -192,8 +181,8 @@ export default function PublicWishlistPage() {
                 <span className="muted">{item.domain}</span>
               </div>
               <span className={`badge item-status ${item.reserved ? "reserved" : "available"}`}>{item.reserved_by_me ? "Seu" : item.reserved ? "Reservado" : "Disponível"}</span>
-              <div className="item-row-actions" onClick={(event) => event.stopPropagation()}>
-                <button className="icon-button" title={expanded ? "Recolher detalhes" : "Ver detalhes"} aria-label={expanded ? "Recolher detalhes" : `Ver detalhes de ${item.name}`} onClick={() => toggleItem(item.id)}><MoreHorizontal size={18} aria-hidden /></button>
+              <div className="item-row-actions">
+                <button className="icon-button" title={expanded ? "Recolher detalhes" : "Ver detalhes"} aria-label={expanded ? "Recolher detalhes" : `Ver detalhes de ${item.name}`} aria-expanded={expanded} aria-controls={detailsId} onClick={() => toggleItem(item.id)}><MoreHorizontal size={18} aria-hidden /></button>
                 <a className="icon-button" href={item.original_url} target="_blank" rel="noreferrer" title="Ver item" aria-label={`Ver ${item.name}`}><ArrowUpRight size={18} aria-hidden /></a>
                 {!data.isOwner && !item.reserved && <button className="button primary compact" onClick={() => authAction(() => reserve(item.id))}>Reservar</button>}
                 {!data.isOwner && item.reserved_by_me && <button className="button compact" onClick={() => authAction(() => unreserve(item.id))}>Desfazer</button>}

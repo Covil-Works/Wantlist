@@ -86,7 +86,7 @@ button, input, textarea, select, a { -webkit-tap-highlight-color: transparent; }
 .wishlist-header p { margin: 0; }
 .wishlist-actions { display: flex; justify-content: flex-end; align-items: center; gap: 8px; flex-wrap: wrap; max-width: 520px; }
 .item-list { display: grid; gap: 10px; }
-.item-row { display: grid; grid-template-columns: 72px minmax(0, 1fr) auto auto; gap: 14px; align-items: center; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); padding: 10px; cursor: pointer; transition: background 160ms ease-out, border-color 160ms ease-out, transform 160ms ease-out; }
+.item-row { display: grid; grid-template-columns: 72px minmax(0, 1fr) auto auto; gap: 14px; align-items: center; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); padding: 10px; transition: background 160ms ease-out, border-color 160ms ease-out, transform 160ms ease-out; }
 .item-row:hover { background: var(--surface); border-color: var(--primary); transform: translateY(-1px); }
 .item-row:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 .item-row.expanded { align-items: start; background: var(--bg); border-color: var(--primary); }
