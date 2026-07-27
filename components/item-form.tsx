@@ -30,6 +30,7 @@ export function ItemForm({ onSaved, onCancel }: { onSaved: () => void; onCancel?
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [imageUrl, setImageUrl] = useState("");
+  const [withoutUrl, setWithoutUrl] = useState(false);
   const [showDescription, setShowDescription] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
   const [extractionState, setExtractionState] = useState<ExtractionState>("idle");
@@ -39,6 +40,12 @@ export function ItemForm({ onSaved, onCancel }: { onSaved: () => void; onCancel?
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
+    if (withoutUrl) {
+      abortRef.current?.abort();
+      setExtractionState("idle");
+      return;
+    }
+
     const normalized = normalizeProductUrl(originalUrl);
     if (!normalized.ok) {
       abortRef.current?.abort();
@@ -88,23 +95,43 @@ export function ItemForm({ onSaved, onCancel }: { onSaved: () => void; onCancel?
       window.clearTimeout(timeout);
       controller.abort();
     };
-  }, [originalUrl]);
+  }, [originalUrl, withoutUrl]);
+
+  function toggleWithoutUrl(checked: boolean) {
+    setWithoutUrl(checked);
+    setError("");
+    setMessage("");
+
+    if (checked) {
+      abortRef.current?.abort();
+      setOriginalUrl("");
+      setName("");
+      setImageUrl("");
+      setImageFailed(false);
+      setExtractionState("idle");
+    }
+  }
 
   async function save(event: React.FormEvent) {
     event.preventDefault();
     setError("");
     try {
-      const normalized = normalizeProductUrl(originalUrl);
-      if (!normalized.ok) {
+      const normalized = withoutUrl ? null : normalizeProductUrl(originalUrl);
+      if (normalized && !normalized.ok) {
         setError("Informe uma URL de produto válida.");
         return;
       }
       const data = await api("/api/items", {
         method: "POST",
-        body: JSON.stringify({ name, description: showDescription ? description : "", imageUrl, originalUrl: normalized.normalizedUrl })
+        body: JSON.stringify({
+          name,
+          description: showDescription ? description : "",
+          imageUrl: withoutUrl ? "" : imageUrl,
+          originalUrl: normalized?.ok ? normalized.normalizedUrl : null
+        })
       });
       setMessage(data.duplicate ? "Item salvo. Aviso: essa URL já existia na wishlist." : "Item salvo.");
-      setOriginalUrl(""); setName(""); setDescription(""); setImageUrl(""); setShowDescription(false); setExtractionState("idle");
+      setOriginalUrl(""); setName(""); setDescription(""); setImageUrl(""); setWithoutUrl(false); setShowDescription(false); setExtractionState("idle");
       onSaved();
     } catch (err) { setError(err instanceof Error ? err.message : "Erro ao salvar."); }
   }
@@ -117,7 +144,7 @@ export function ItemForm({ onSaved, onCancel }: { onSaved: () => void; onCancel?
       <div className="form-heading">
         <div>
           <h2>Adicionar um item</h2>
-          <p className="muted">Cole o link do produto e revise os detalhes antes de salvar.</p>
+          <p className="muted">{withoutUrl ? "Preencha o nome do item e, se quiser, adicione uma descrição." : "Cole o link do produto e revise os detalhes antes de salvar."}</p>
         </div>
         {onCancel && <button type="button" className="icon-button" title="Fechar formulário" aria-label="Fechar formulário" onClick={onCancel}><X size={18} aria-hidden /></button>}
       </div>
@@ -125,7 +152,14 @@ export function ItemForm({ onSaved, onCancel }: { onSaved: () => void; onCancel?
       {imageUrl && !imageFailed && <img className="metadata-preview-image" src={imageUrl} alt="Prévia do produto" onError={() => setImageFailed(true)} />}
       {imageUrl && imageFailed && <p className="metadata-note"><ImageOff size={16} aria-hidden /> A imagem encontrada não pôde ser carregada.</p>}
 
-      <label className="field"><span>Link do produto</span><input className="input" required inputMode="url" value={originalUrl} onChange={(e) => setOriginalUrl(e.target.value)} /></label>
+      <label className={`field product-link-field${withoutUrl ? " disabled" : ""}`}>
+        <span>Link do produto</span>
+        <input className="input" required={!withoutUrl} disabled={withoutUrl} inputMode="url" value={originalUrl} onChange={(e) => setOriginalUrl(e.target.value)} />
+      </label>
+      <label className="description-toggle">
+        <input type="checkbox" checked={withoutUrl} onChange={(event) => toggleWithoutUrl(event.target.checked)} />
+        <span>Adicionar item sem link</span>
+      </label>
       {extractionMessage && <p className={`metadata-note ${extractionState === "loading" ? "loading" : ""}`}>{extractionState === "loading" && <Loader2 size={16} aria-hidden />}{extractionMessage}</p>}
       <label className="field"><span>Nome</span><input className="input" required maxLength={140} value={name} onChange={(e) => setName(e.target.value)} /></label>
 

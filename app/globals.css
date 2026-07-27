@@ -73,6 +73,9 @@ button, input, textarea, select, a { -webkit-tap-highlight-color: transparent; }
 .input, .textarea, .select { width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 11px 12px; background: var(--bg); color: var(--ink); transition: border-color 150ms ease-out, box-shadow 150ms ease-out; }
 .input::placeholder, .textarea::placeholder { color: var(--muted); }
 .input:focus, .textarea:focus, .select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--focus-ring); outline: 0; }
+.input:disabled { cursor: not-allowed; border-color: var(--line); background: var(--surface-2); color: var(--muted); opacity: .72; }
+.product-link-field { transition: opacity 150ms ease-out; }
+.product-link-field.disabled { opacity: .72; }
 .textarea { min-height: 104px; resize: vertical; }
 .muted { color: var(--muted); }
 .badge { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 5px 9px; background: var(--surface-2); font-size: 12px; font-weight: 750; color: var(--ink); }

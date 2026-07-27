@@ -138,6 +138,7 @@ export function getStoreOptions(items: Pick<Item, "domain">[]) {
   const stores = new Map<string, Store>();
 
   for (const item of items) {
+    if (!item.domain) continue;
     const store = resolveStore(item.domain);
     stores.set(store.id, store);
   }
