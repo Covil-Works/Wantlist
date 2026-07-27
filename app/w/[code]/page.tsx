@@ -291,7 +291,6 @@ export default function PublicWishlistPage() {
         <h1>{data.wishlist.title}</h1>
         <p className="muted wishlist-meta">
           <span>Wishlist de <strong>{data.wishlist.owner_name}</strong></span>
-          <span>{data.items.length} itens</span>
         </p>
       </header>
 
