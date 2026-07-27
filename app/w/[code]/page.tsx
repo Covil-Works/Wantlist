@@ -4,11 +4,16 @@ import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, ArrowUpRight, Copy, Eye, EyeOff, Globe2, Home, MailPlus, MoreHorizontal, Plus, Settings, Share2, Trash2, UserPlus, X } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, Copy, Eye, EyeOff, Globe2, Home, MailPlus, MoreHorizontal, Plus, Search, Settings, Share2, SlidersHorizontal, Trash2, UserPlus, X } from "lucide-react";
 import { api } from "@/lib/client-api";
 import { useAuth } from "@/components/auth-provider";
 import { ItemForm } from "@/components/item-form";
+import type { Item } from "@/lib/types";
+import { getStoreOptions, resolveStore } from "@/lib/store-catalog";
+import { searchItems } from "@/lib/item-search";
 
+type ItemView = "grouped" | "all" | "available" | "reserved";
+type ItemOrder = "newest" | "oldest" | "name-asc" | "name-desc";
 const visibilityOptions = [
   { value: "public", label: "Pública", description: "Qualquer pessoa com o link pode ver.", icon: Globe2 },
   { value: "invited", label: "Somente convidados", description: "Apenas pessoas convidadas acessam.", icon: UserPlus },
@@ -44,9 +49,16 @@ export default function PublicWishlistPage() {
   const [inviteCopied, setInviteCopied] = useState(false);
   const [showVisibilityMenu, setShowVisibilityMenu] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
+  const [showListControls, setShowListControls] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
+  const [itemView, setItemView] = useState<ItemView>("grouped");
+  const [itemOrder, setItemOrder] = useState<ItemOrder>("newest");
+  const [storeFilter, setStoreFilter] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const shareMenuRef = useRef<HTMLDivElement>(null);
+  const listControlsRef = useRef<HTMLDivElement>(null);
 
   async function load() {
     setError("");
@@ -74,6 +86,19 @@ export default function PublicWishlistPage() {
     document.addEventListener("pointerdown", closeMenusOnOutsideClick);
     return () => document.removeEventListener("pointerdown", closeMenusOnOutsideClick);
   }, [showShareMenu, showVisibilityMenu]);
+
+  useEffect(() => {
+    if (!showListControls) return;
+
+    function closeListControlsOnOutsideClick(event: PointerEvent) {
+      if (event.target instanceof Node && !listControlsRef.current?.contains(event.target)) {
+        setShowListControls(false);
+      }
+    }
+
+    document.addEventListener("pointerdown", closeListControlsOnOutsideClick);
+    return () => document.removeEventListener("pointerdown", closeListControlsOnOutsideClick);
+  }, [showListControls]);
 
   async function authAction(fn: () => Promise<void>) {
     if (!user) { router.push("/login"); return; }
@@ -127,6 +152,83 @@ export default function PublicWishlistPage() {
   if (error) return <ContentNotFound />;
 
   const shareUrl = typeof location === "undefined" ? `/w/${data.wishlist.public_code}` : `${location.origin}/w/${data.wishlist.public_code}`;
+  const storeOptions = getStoreOptions(data.items);
+  const filteredItems = data.items.filter((item: Item) => {
+    const matchesStore = storeFilter === "all" || resolveStore(item.domain).id === storeFilter;
+    const matchesStatus = itemView === "grouped" || itemView === "all"
+      || (itemView === "available" && !item.reserved)
+      || (itemView === "reserved" && item.reserved);
+    return matchesStore && matchesStatus;
+  });
+  const orderedItems = [...filteredItems].sort((first: Item, second: Item) => {
+    if (itemOrder === "name-asc" || itemOrder === "name-desc") {
+      const comparison = first.name.localeCompare(second.name, "pt-BR", { sensitivity: "base", numeric: true });
+      return itemOrder === "name-asc" ? comparison : -comparison;
+    }
+
+    const comparison = new Date(second.created_at).getTime() - new Date(first.created_at).getTime();
+    return itemOrder === "newest" ? comparison : -comparison;
+  });
+  const sortedItems = searchItems(orderedItems, searchQuery);
+  const availableItems = sortedItems.filter((item: Item) => !item.reserved);
+  const reservedItems = sortedItems.filter((item: Item) => item.reserved);
+  const activeControlCount = Number(itemView !== "grouped") + Number(itemOrder !== "newest") + Number(storeFilter !== "all");
+  const emptyItemsMessage = searchQuery.trim() ? "Nenhum item corresponde à busca." : "Nenhum item corresponde aos filtros.";
+  const itemSections = itemView === "grouped"
+    ? [
+        { id: "available-items", title: "Disponíveis", items: availableItems },
+        { id: "reserved-items", title: "Reservados", items: reservedItems },
+      ]
+    : [{
+        id: `${itemView}-items`,
+        title: itemView === "all" ? "Todos os itens" : itemView === "available" ? "Disponíveis" : "Reservados",
+        items: sortedItems,
+      }];
+
+  function renderItem(item: Item) {
+    const expanded = expandedItemId === item.id;
+    const hasDescription = Boolean(item.description);
+    const hasExpandedDetails = hasDescription || expanded;
+    const detailsId = `item-details-${item.id}`;
+
+    return (
+      <article
+        className={`item-row${expanded ? " expanded" : ""}`}
+        key={item.id}
+      >
+        {item.image_url ? <Image className="item-row-image" src={item.image_url} alt="" width={88} height={88} unoptimized /> : <div className="item-row-image" />}
+        <div className="item-row-copy">
+          <strong className="item-row-title" title={item.name}>{item.name}</strong>
+          <span className="muted">{item.domain}</span>
+          {expanded && <span className={`badge item-status ${item.reserved ? "reserved" : "available"} item-row-copy-status`}>{item.reserved_by_me ? "Seu" : item.reserved ? "Reservado" : "Disponível"}</span>}
+        </div>
+        <div className="item-row-actions">
+          <button className="icon-button" title={expanded ? "Recolher detalhes" : "Ver detalhes"} aria-label={expanded ? "Recolher detalhes" : `Ver detalhes de ${item.name}`} aria-expanded={expanded} aria-controls={hasExpandedDetails ? detailsId : undefined} onClick={() => toggleItem(item.id)}><MoreHorizontal size={18} aria-hidden /></button>
+          <a className="icon-button" href={item.original_url} target="_blank" rel="noreferrer" title="Ver item" aria-label={`Ver ${item.name}`}><ArrowUpRight size={18} aria-hidden /></a>
+          {!data.isOwner && !item.reserved && <button className="button primary compact" onClick={() => authAction(() => reserve(item.id))}>Reservar</button>}
+          {!data.isOwner && item.reserved_by_me && <button className="button compact" onClick={() => authAction(() => unreserve(item.id))}>Desfazer</button>}
+          {data.isOwner && item.reserved && <button className="icon-button danger" title="Remover reserva" aria-label="Remover reserva" onClick={() => confirm("Remover a reserva deste item?") && authAction(() => unreserve(item.id))}><EyeOff size={18} aria-hidden /></button>}
+          {data.isOwner && <button className="icon-button danger" title="Excluir item" aria-label={`Excluir ${item.name}`} onClick={() => remove(item.id)}><Trash2 size={18} aria-hidden /></button>}
+        </div>
+        {expanded && hasExpandedDetails && (
+          <div className="item-row-details" id={detailsId}>
+            {hasDescription && <p>{item.description}</p>}
+          </div>
+        )}
+      </article>
+    );
+  }
+
+  function clearListControls() {
+    setItemView("grouped");
+    setItemOrder("newest");
+    setStoreFilter("all");
+  }
+
+  function closeSearch() {
+    setShowSearch(false);
+    setSearchQuery("");
+  }
 
   return (
     <main className="page stack wishlist-page">
@@ -189,7 +291,6 @@ export default function PublicWishlistPage() {
         <h1>{data.wishlist.title}</h1>
         <p className="muted wishlist-meta">
           <span>Wishlist de <strong>{data.wishlist.owner_name}</strong></span>
-          <span>{data.items.length} itens</span>
         </p>
       </header>
 
@@ -218,38 +319,103 @@ export default function PublicWishlistPage() {
           <button className="button primary add-item-inline" onClick={() => setShowItemForm(true)}><Plus size={18} aria-hidden />Adicionar item</button>
         )}
         {data.isOwner && showItemForm && <ItemForm onCancel={() => setShowItemForm(false)} onSaved={() => { setShowItemForm(false); load(); }} />}
-        {data.items.length === 0 ? <div className="empty">Esta wishlist ainda não possui itens.</div> : data.items.map((item: any) => {
-          const expanded = expandedItemId === item.id;
-          const hasDescription = Boolean(item.description);
-          const hasExpandedDetails = hasDescription || expanded;
-          const detailsId = `item-details-${item.id}`;
-          return (
-            <article
-              className={`item-row${expanded ? " expanded" : ""}`}
-              key={item.id}
-            >
-              {item.image_url ? <Image className="item-row-image" src={item.image_url} alt="" width={88} height={88} unoptimized /> : <div className="item-row-image" />}
-              <div className="item-row-copy">
-                <strong className="item-row-title" title={item.name}>{item.name}</strong>
-                <span className="muted">{item.domain}</span>
-                {expanded && <span className={`badge item-status ${item.reserved ? "reserved" : "available"} item-row-copy-status`}>{item.reserved_by_me ? "Seu" : item.reserved ? "Reservado" : "Disponível"}</span>}
+        {data.items.length === 0 ? (
+          <div className="empty">Esta wishlist ainda não possui itens.</div>
+        ) : (
+          <>
+            <div className="wishlist-list-toolbar">
+              <div className="wishlist-list-toolbar-row">
+                <span className="muted" aria-live="polite">{sortedItems.length} de {data.items.length} itens</span>
+                <div className="wishlist-list-toolbar-actions">
+                  <button
+                    className={`icon-button wishlist-search-button${searchQuery ? " active" : ""}`}
+                    title={showSearch ? "Fechar pesquisa" : "Pesquisar itens"}
+                    aria-label={showSearch ? "Fechar pesquisa" : "Pesquisar itens"}
+                    aria-expanded={showSearch}
+                    aria-controls="wishlist-search-field"
+                    onClick={() => showSearch ? closeSearch() : setShowSearch(true)}
+                  >
+                    <Search size={18} aria-hidden />
+                  </button>
+                  <div className="menu-wrap" ref={listControlsRef}>
+                    <button
+                      className={`icon-button wishlist-filter-button${activeControlCount > 0 ? " active" : ""}`}
+                      title="Filtrar e ordenar"
+                      aria-label="Filtrar e ordenar"
+                      aria-expanded={showListControls}
+                      aria-controls="wishlist-list-controls"
+                      onClick={() => setShowListControls((value) => !value)}
+                    >
+                      <SlidersHorizontal size={18} aria-hidden />
+                    </button>
+                    {showListControls && (
+                      <div className="dropdown-menu wishlist-list-controls" id="wishlist-list-controls" role="dialog" aria-label="Filtrar e ordenar itens">
+                        <label className="field">
+                          <span>Ordenar por</span>
+                          <select className="select" value={itemOrder} onChange={(event) => setItemOrder(event.target.value as ItemOrder)}>
+                            <option value="newest">Inclusão mais recente</option>
+                            <option value="oldest">Inclusão mais antiga</option>
+                            <option value="name-asc">Nome de A a Z</option>
+                            <option value="name-desc">Nome de Z a A</option>
+                          </select>
+                        </label>
+                        <label className="field">
+                          <span>Filtrar por</span>
+                          <select className="select" value={itemView} onChange={(event) => setItemView(event.target.value as ItemView)}>
+                            <option value="grouped">Separados por status</option>
+                            <option value="all">Todos juntos</option>
+                            <option value="available">Somente disponíveis</option>
+                            <option value="reserved">Somente reservados</option>
+                          </select>
+                        </label>
+                        <label className="field">
+                          <span>Loja</span>
+                          <select className="select" value={storeFilter} onChange={(event) => setStoreFilter(event.target.value)}>
+                            <option value="all">Todas as lojas</option>
+                            {storeOptions.map((store) => <option value={store.id} key={store.id}>{store.label}</option>)}
+                          </select>
+                        </label>
+                        {activeControlCount > 0 && <button className="button wishlist-clear-filters" onClick={clearListControls}>Restaurar padrão</button>}
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
-              <div className="item-row-actions">
-                <button className="icon-button" title={expanded ? "Recolher detalhes" : "Ver detalhes"} aria-label={expanded ? "Recolher detalhes" : `Ver detalhes de ${item.name}`} aria-expanded={expanded} aria-controls={hasExpandedDetails ? detailsId : undefined} onClick={() => toggleItem(item.id)}><MoreHorizontal size={18} aria-hidden /></button>
-                <a className="icon-button" href={item.original_url} target="_blank" rel="noreferrer" title="Ver item" aria-label={`Ver ${item.name}`}><ArrowUpRight size={18} aria-hidden /></a>
-                {!data.isOwner && !item.reserved && <button className="button primary compact" onClick={() => authAction(() => reserve(item.id))}>Reservar</button>}
-                {!data.isOwner && item.reserved_by_me && <button className="button compact" onClick={() => authAction(() => unreserve(item.id))}>Desfazer</button>}
-                {data.isOwner && item.reserved && <button className="icon-button danger" title="Remover reserva" aria-label="Remover reserva" onClick={() => confirm("Remover a reserva deste item?") && authAction(() => unreserve(item.id))}><EyeOff size={18} aria-hidden /></button>}
-                {data.isOwner && <button className="icon-button danger" title="Excluir item" aria-label={`Excluir ${item.name}`} onClick={() => remove(item.id)}><Trash2 size={18} aria-hidden /></button>}
-              </div>
-              {expanded && hasExpandedDetails && (
-                <div className="item-row-details" id={detailsId}>
-                  {hasDescription && <p>{item.description}</p>}
+              {showSearch && (
+                <div className="wishlist-search-field" id="wishlist-search-field">
+                  <label className="sr-only" htmlFor="wishlist-search-input">Pesquisar por nome ou descrição</label>
+                  <Search size={18} aria-hidden />
+                  <input
+                    className="input"
+                    id="wishlist-search-input"
+                    type="search"
+                    placeholder="Pesquisar por nome ou descrição"
+                    value={searchQuery}
+                    onChange={(event) => setSearchQuery(event.target.value)}
+                    onKeyDown={(event) => { if (event.key === "Escape") closeSearch(); }}
+                    autoFocus
+                  />
+                  <button className="wishlist-search-close" type="button" title="Fechar pesquisa" aria-label="Fechar pesquisa" onClick={closeSearch}>
+                    <X size={18} aria-hidden />
+                  </button>
                 </div>
               )}
-            </article>
-          );
-        })}
+            </div>
+            {itemSections.map((section) => (
+              <section className="wishlist-item-group" aria-labelledby={`${section.id}-title`} key={section.id}>
+                <div className="wishlist-item-group-heading">
+                  <h2 id={`${section.id}-title`}>{section.title}</h2>
+                  <span>{section.items.length}</span>
+                </div>
+                <div className="wishlist-item-group-list">
+                  {section.items.length > 0
+                    ? section.items.map(renderItem)
+                    : <p className="wishlist-item-group-empty">{emptyItemsMessage}</p>}
+                </div>
+              </section>
+            ))}
+          </>
+        )}
       </section>
 
       {data.isOwner && !showItemForm && <button className="fab-add" aria-label="Adicionar item" onClick={() => setShowItemForm(true)}><Plus size={24} aria-hidden /></button>}
