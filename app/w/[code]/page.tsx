@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ArrowUpRight, Eye, EyeOff, Globe2, Home, MailPlus, MoreHorizontal, Plus, Settings, Share2, Trash2, UserPlus, X } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, Copy, Eye, EyeOff, Globe2, Home, MailPlus, MoreHorizontal, Plus, Settings, Share2, Trash2, UserPlus, X } from "lucide-react";
 import { api } from "@/lib/client-api";
 import { useAuth } from "@/components/auth-provider";
 import { ItemForm } from "@/components/item-form";
@@ -40,8 +40,10 @@ export default function PublicWishlistPage() {
   const [error, setError] = useState("");
   const [showItemForm, setShowItemForm] = useState(false);
   const [inviteUrl, setInviteUrl] = useState("");
-  const [copied, setCopied] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
+  const [inviteCopied, setInviteCopied] = useState(false);
   const [showVisibilityMenu, setShowVisibilityMenu] = useState(false);
+  const [showShareMenu, setShowShareMenu] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
 
@@ -63,6 +65,11 @@ export default function PublicWishlistPage() {
     setExpandedItemId((current) => current === id ? null : id);
   }
 
+  function toggleShareMenu() {
+    setShowShareMenu((value) => !value);
+    setShowVisibilityMenu(false);
+  }
+
   async function changeVisibility(visibility: string) {
     setShowVisibilityMenu(false);
     await api("/api/wishlist", { method: "PATCH", body: JSON.stringify({ title: data.wishlist.title, visibility }) });
@@ -70,6 +77,8 @@ export default function PublicWishlistPage() {
   }
 
   async function invite() {
+    setShowShareMenu(false);
+    setInviteCopied(false);
     const res = await api("/api/invites", { method: "POST" });
     setInviteUrl(`${location.origin}${res.url}`);
     setShowInviteModal(true);
@@ -77,14 +86,14 @@ export default function PublicWishlistPage() {
 
   async function copyInvite() {
     await navigator.clipboard.writeText(inviteUrl);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1800);
+    setInviteCopied(true);
+    window.setTimeout(() => setInviteCopied(false), 1800);
   }
 
-  async function share() {
+  async function copyShareLink() {
     await navigator.clipboard.writeText(`${location.origin}/w/${data.wishlist.public_code}`);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1800);
+    setShareCopied(true);
+    window.setTimeout(() => setShareCopied(false), 1800);
   }
 
   async function reserve(id: string) { await api(`/api/items/${id}/reserve`, { method: "POST" }); }
@@ -98,8 +107,13 @@ export default function PublicWishlistPage() {
   if (loading || (!data && !error)) return <main className="page"><div className="empty">Carregando wishlist.</div></main>;
   if (error) return <ContentNotFound />;
 
+  const shareUrl = typeof location === "undefined" ? `/w/${data.wishlist.public_code}` : `${location.origin}/w/${data.wishlist.public_code}`;
+
   return (
     <main className="page stack">
+      <Link className="icon-button page-nav-button" href={user ? "/painel" : "/"} title={user ? "Voltar ao painel" : "Voltar para a página inicial"} aria-label={user ? "Voltar ao painel" : "Voltar para a página inicial"}>
+        <ArrowLeft size={18} aria-hidden />
+      </Link>
       <header className="wishlist-header">
         <div className="stack">
           <span className="wishlist-kicker">Minha lista de desejos:</span>
@@ -110,11 +124,26 @@ export default function PublicWishlistPage() {
           <span className="badge">{visibilityLabel(data.wishlist.visibility)}</span>
           {data.isOwner && (
             <>
-              <button className="icon-button" title="Copiar link" aria-label="Copiar link" onClick={share}><Share2 size={18} aria-hidden /></button>
-              <button className="icon-button" title="Gerar convite" aria-label="Gerar convite" onClick={invite}><MailPlus size={18} aria-hidden /></button>
-              <Link className="button wishlist-config-button" href="/wishlist/configuracoes"><Settings size={17} aria-hidden />Configurar</Link>
               <div className="menu-wrap">
-                <button className="icon-button" title="Alterar visibilidade" aria-label="Alterar visibilidade" onClick={() => setShowVisibilityMenu((value) => !value)}><Eye size={18} aria-hidden /></button>
+                <button className="icon-button" title="Compartilhar" aria-label="Compartilhar" aria-expanded={showShareMenu} aria-controls="share-menu" onClick={toggleShareMenu}><Share2 size={18} aria-hidden /></button>
+                {showShareMenu && (
+                  <div className="dropdown-menu share-menu" id="share-menu" role="menu">
+                    <strong>Compartilhar wishlist</strong>
+                    <div className="share-link-plain">{shareUrl}</div>
+                    <button className="menu-option" onClick={copyShareLink} role="menuitem">
+                      <Copy size={18} aria-hidden />
+                      <span><strong>Copiar link</strong><small>Copie o link público da lista.</small></span>
+                    </button>
+                    {shareCopied && <p className="share-copy-feedback" role="status">Link copiado.</p>}
+                    <button className="menu-option" onClick={invite} role="menuitem">
+                      <MailPlus size={18} aria-hidden />
+                      <span><strong>Convidar amigo</strong><small>Gere um convite para acesso à lista.</small></span>
+                    </button>
+                  </div>
+                )}
+              </div>
+              <div className="menu-wrap">
+                <button className="icon-button" title="Alterar visibilidade" aria-label="Alterar visibilidade" onClick={() => { setShowVisibilityMenu((value) => !value); setShowShareMenu(false); }}><Eye size={18} aria-hidden /></button>
                 {showVisibilityMenu && (
                   <div className="dropdown-menu visibility-menu" role="menu">
                     <strong>Escolha a visibilidade da lista</strong>
@@ -131,6 +160,7 @@ export default function PublicWishlistPage() {
                   </div>
                 )}
               </div>
+              <Link className="icon-button wishlist-config-button" href="/wishlist/configuracoes" title="Configurar wishlist" aria-label="Configurar wishlist"><Settings size={18} aria-hidden /></Link>
             </>
           )}
           {!data.isOwner && data.wishlist.visibility === "public" && (
@@ -140,8 +170,6 @@ export default function PublicWishlistPage() {
           )}
         </div>
       </header>
-
-      {copied && <p className="success">Link copiado.</p>}
 
       {data.isOwner && showInviteModal && (
         <div className="modal-backdrop" role="presentation" onClick={() => setShowInviteModal(false)}>
@@ -158,6 +186,7 @@ export default function PublicWishlistPage() {
               <button className="button primary" onClick={copyInvite}>Copiar convite</button>
               <button className="button" onClick={() => setShowInviteModal(false)}>Fechar</button>
             </div>
+            {inviteCopied && <p className="success" role="status">Convite copiado.</p>}
           </section>
         </div>
       )}
@@ -169,22 +198,12 @@ export default function PublicWishlistPage() {
         {data.isOwner && showItemForm && <ItemForm onCancel={() => setShowItemForm(false)} onSaved={() => { setShowItemForm(false); load(); }} />}
         {data.items.length === 0 ? <div className="empty">Esta wishlist ainda não possui itens.</div> : data.items.map((item: any) => {
           const expanded = expandedItemId === item.id;
+          const hasDescription = Boolean(item.description);
           const detailsId = `item-details-${item.id}`;
           return (
             <article
               className={`item-row${expanded ? " expanded" : ""}`}
               key={item.id}
-              role="button"
-              tabIndex={0}
-              aria-expanded={expanded}
-              aria-controls={detailsId}
-              onClick={() => toggleItem(item.id)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ") {
-                  event.preventDefault();
-                  toggleItem(item.id);
-                }
-              }}
             >
               {item.image_url ? <Image className="item-row-image" src={item.image_url} alt="" width={88} height={88} unoptimized /> : <div className="item-row-image" />}
               <div className="item-row-copy">
@@ -192,17 +211,17 @@ export default function PublicWishlistPage() {
                 <span className="muted">{item.domain}</span>
               </div>
               <span className={`badge item-status ${item.reserved ? "reserved" : "available"}`}>{item.reserved_by_me ? "Seu" : item.reserved ? "Reservado" : "Disponível"}</span>
-              <div className="item-row-actions" onClick={(event) => event.stopPropagation()}>
-                <button className="icon-button" title={expanded ? "Recolher detalhes" : "Ver detalhes"} aria-label={expanded ? "Recolher detalhes" : `Ver detalhes de ${item.name}`} onClick={() => toggleItem(item.id)}><MoreHorizontal size={18} aria-hidden /></button>
+              <div className="item-row-actions">
+                <button className="icon-button" title={expanded ? "Recolher detalhes" : "Ver detalhes"} aria-label={expanded ? "Recolher detalhes" : `Ver detalhes de ${item.name}`} aria-expanded={expanded} aria-controls={hasDescription ? detailsId : undefined} onClick={() => toggleItem(item.id)}><MoreHorizontal size={18} aria-hidden /></button>
                 <a className="icon-button" href={item.original_url} target="_blank" rel="noreferrer" title="Ver item" aria-label={`Ver ${item.name}`}><ArrowUpRight size={18} aria-hidden /></a>
                 {!data.isOwner && !item.reserved && <button className="button primary compact" onClick={() => authAction(() => reserve(item.id))}>Reservar</button>}
                 {!data.isOwner && item.reserved_by_me && <button className="button compact" onClick={() => authAction(() => unreserve(item.id))}>Desfazer</button>}
                 {data.isOwner && item.reserved && <button className="icon-button danger" title="Remover reserva" aria-label="Remover reserva" onClick={() => confirm("Remover a reserva deste item?") && authAction(() => unreserve(item.id))}><EyeOff size={18} aria-hidden /></button>}
                 {data.isOwner && <button className="icon-button danger" title="Excluir item" aria-label={`Excluir ${item.name}`} onClick={() => remove(item.id)}><Trash2 size={18} aria-hidden /></button>}
               </div>
-              {expanded && (
+              {expanded && hasDescription && (
                 <div className="item-row-details" id={detailsId}>
-                  {item.description ? <p>{item.description}</p> : <p className="muted">Este item ainda não tem descrição.</p>}
+                  <p>{item.description}</p>
                 </div>
               )}
             </article>
@@ -211,7 +230,6 @@ export default function PublicWishlistPage() {
       </section>
 
       {data.isOwner && !showItemForm && <button className="fab-add" aria-label="Adicionar item" onClick={() => setShowItemForm(true)}><Plus size={24} aria-hidden /></button>}
-      {data.isOwner && <Link className="button back-to-dashboard" href="/painel">Voltar ao painel</Link>}
     </main>
   );
 }

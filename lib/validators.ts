@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { normalizeProductUrl } from "@/lib/product-metadata/services/normalize-product-url";
 
 export const usernameSchema = z
   .string()
@@ -24,7 +25,14 @@ export const itemSchema = z.object({
   name: z.string().trim().min(2).max(140),
   description: z.string().trim().max(700).optional().nullable(),
   imageUrl: z.string().trim().url().max(1000).optional().nullable().or(z.literal("")),
-  originalUrl: z.string().trim().url().max(1000)
+  originalUrl: z.string().trim().max(1000).transform((value, ctx) => {
+    const normalized = normalizeProductUrl(value);
+    if (!normalized.ok) {
+      ctx.addIssue({ code: "custom", message: "Informe uma URL de produto válida." });
+      return z.NEVER;
+    }
+    return normalized.normalizedUrl;
+  })
 });
 
 export function domainFromUrl(url: string) {
