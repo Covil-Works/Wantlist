@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowUpRight, Copy, Eye, EyeOff, Globe2, Home, MailPlus, MoreHorizontal, Plus, Search, Settings, Share2, SlidersHorizontal, Trash2, UserPlus, X } from "lucide-react";
 import { api } from "@/lib/client-api";
@@ -39,8 +39,10 @@ function ContentNotFound() {
 
 export default function PublicWishlistPage() {
   const { code } = useParams<{ code: string }>();
-  const { user, loading } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const pendingAction = searchParams.get("action");
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState("");
   const [showItemForm, setShowItemForm] = useState(false);
@@ -59,6 +61,7 @@ export default function PublicWishlistPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const shareMenuRef = useRef<HTMLDivElement>(null);
   const listControlsRef = useRef<HTMLDivElement>(null);
+  const pendingActionHandledRef = useRef(false);
 
   async function load() {
     setError("");
@@ -67,7 +70,34 @@ export default function PublicWishlistPage() {
     catch { setError("not-found"); }
   }
 
-  useEffect(() => { if (!loading) load(); }, [code, loading, user]);
+  useEffect(() => { load(); }, [code, user]);
+
+  useEffect(() => {
+    if (
+      pendingAction !== "follow"
+      || !user
+      || !data
+      || data.isOwner
+      || data.wishlist.visibility !== "public"
+      || pendingActionHandledRef.current
+    ) return;
+
+    pendingActionHandledRef.current = true;
+
+    async function followAfterAuthentication() {
+      try {
+        if (!data.following) {
+          await api(`/api/follow/${code}`, { method: "POST" });
+          await load();
+        }
+        router.replace(`/w/${code}`);
+      } catch {
+        pendingActionHandledRef.current = false;
+      }
+    }
+
+    followAfterAuthentication();
+  }, [code, data, pendingAction, router, user]);
 
   useEffect(() => {
     if (!showShareMenu && !showVisibilityMenu) return;
@@ -100,8 +130,12 @@ export default function PublicWishlistPage() {
     return () => document.removeEventListener("pointerdown", closeListControlsOnOutsideClick);
   }, [showListControls]);
 
-  async function authAction(fn: () => Promise<void>) {
-    if (!user) { router.push("/login"); return; }
+  async function authAction(fn: () => Promise<void>, action?: "follow") {
+    if (!user) {
+      const nextPath = `/w/${code}${action ? `?action=${action}` : ""}`;
+      router.push(`/login?next=${encodeURIComponent(nextPath)}`);
+      return;
+    }
     await fn(); await load();
   }
 
@@ -148,7 +182,7 @@ export default function PublicWishlistPage() {
     }
   }
 
-  if (loading || (!data && !error)) return <main className="page"><div className="empty">Carregando wishlist.</div></main>;
+  if (!data && !error) return <main className="page"><div className="empty">Carregando wishlist.</div></main>;
   if (error) return <ContentNotFound />;
 
   const shareUrl = typeof location === "undefined" ? `/w/${data.wishlist.public_code}` : `${location.origin}/w/${data.wishlist.public_code}`;
@@ -281,7 +315,7 @@ export default function PublicWishlistPage() {
           {!data.isOwner && data.wishlist.visibility === "public" && (
             <button className="button" onClick={() => authAction(async () => {
               await api(`/api/follow/${code}`, { method: data.following ? "DELETE" : "POST" });
-            })}>{data.following ? "Deixar de seguir" : "Seguir"}</button>
+            }, data.following ? undefined : "follow")}>{data.following ? "Deixar de seguir" : "Seguir"}</button>
           )}
         </div>
       </div>
