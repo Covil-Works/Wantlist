@@ -8,6 +8,7 @@ import { ArrowLeft, ArrowUpRight, Copy, Eye, EyeOff, Globe2, Home, MailPlus, Mor
 import { api } from "@/lib/client-api";
 import { useAuth } from "@/components/auth-provider";
 import { ItemForm } from "@/components/item-form";
+import type { Item } from "@/lib/types";
 
 const visibilityOptions = [
   { value: "public", label: "Pública", description: "Qualquer pessoa com o link pode ver.", icon: Globe2 },
@@ -127,6 +128,42 @@ export default function PublicWishlistPage() {
   if (error) return <ContentNotFound />;
 
   const shareUrl = typeof location === "undefined" ? `/w/${data.wishlist.public_code}` : `${location.origin}/w/${data.wishlist.public_code}`;
+  const availableItems = data.items.filter((item: Item) => !item.reserved);
+  const reservedItems = data.items.filter((item: Item) => item.reserved);
+
+  function renderItem(item: Item) {
+    const expanded = expandedItemId === item.id;
+    const hasDescription = Boolean(item.description);
+    const hasExpandedDetails = hasDescription || expanded;
+    const detailsId = `item-details-${item.id}`;
+
+    return (
+      <article
+        className={`item-row${expanded ? " expanded" : ""}`}
+        key={item.id}
+      >
+        {item.image_url ? <Image className="item-row-image" src={item.image_url} alt="" width={88} height={88} unoptimized /> : <div className="item-row-image" />}
+        <div className="item-row-copy">
+          <strong className="item-row-title" title={item.name}>{item.name}</strong>
+          <span className="muted">{item.domain}</span>
+          {expanded && <span className={`badge item-status ${item.reserved ? "reserved" : "available"} item-row-copy-status`}>{item.reserved_by_me ? "Seu" : item.reserved ? "Reservado" : "Disponível"}</span>}
+        </div>
+        <div className="item-row-actions">
+          <button className="icon-button" title={expanded ? "Recolher detalhes" : "Ver detalhes"} aria-label={expanded ? "Recolher detalhes" : `Ver detalhes de ${item.name}`} aria-expanded={expanded} aria-controls={hasExpandedDetails ? detailsId : undefined} onClick={() => toggleItem(item.id)}><MoreHorizontal size={18} aria-hidden /></button>
+          <a className="icon-button" href={item.original_url} target="_blank" rel="noreferrer" title="Ver item" aria-label={`Ver ${item.name}`}><ArrowUpRight size={18} aria-hidden /></a>
+          {!data.isOwner && !item.reserved && <button className="button primary compact" onClick={() => authAction(() => reserve(item.id))}>Reservar</button>}
+          {!data.isOwner && item.reserved_by_me && <button className="button compact" onClick={() => authAction(() => unreserve(item.id))}>Desfazer</button>}
+          {data.isOwner && item.reserved && <button className="icon-button danger" title="Remover reserva" aria-label="Remover reserva" onClick={() => confirm("Remover a reserva deste item?") && authAction(() => unreserve(item.id))}><EyeOff size={18} aria-hidden /></button>}
+          {data.isOwner && <button className="icon-button danger" title="Excluir item" aria-label={`Excluir ${item.name}`} onClick={() => remove(item.id)}><Trash2 size={18} aria-hidden /></button>}
+        </div>
+        {expanded && hasExpandedDetails && (
+          <div className="item-row-details" id={detailsId}>
+            {hasDescription && <p>{item.description}</p>}
+          </div>
+        )}
+      </article>
+    );
+  }
 
   return (
     <main className="page stack wishlist-page">
@@ -218,38 +255,30 @@ export default function PublicWishlistPage() {
           <button className="button primary add-item-inline" onClick={() => setShowItemForm(true)}><Plus size={18} aria-hidden />Adicionar item</button>
         )}
         {data.isOwner && showItemForm && <ItemForm onCancel={() => setShowItemForm(false)} onSaved={() => { setShowItemForm(false); load(); }} />}
-        {data.items.length === 0 ? <div className="empty">Esta wishlist ainda não possui itens.</div> : data.items.map((item: any) => {
-          const expanded = expandedItemId === item.id;
-          const hasDescription = Boolean(item.description);
-          const hasExpandedDetails = hasDescription || expanded;
-          const detailsId = `item-details-${item.id}`;
-          return (
-            <article
-              className={`item-row${expanded ? " expanded" : ""}`}
-              key={item.id}
-            >
-              {item.image_url ? <Image className="item-row-image" src={item.image_url} alt="" width={88} height={88} unoptimized /> : <div className="item-row-image" />}
-              <div className="item-row-copy">
-                <strong className="item-row-title" title={item.name}>{item.name}</strong>
-                <span className="muted">{item.domain}</span>
-                {expanded && <span className={`badge item-status ${item.reserved ? "reserved" : "available"} item-row-copy-status`}>{item.reserved_by_me ? "Seu" : item.reserved ? "Reservado" : "Disponível"}</span>}
+        {data.items.length === 0 ? (
+          <div className="empty">Esta wishlist ainda não possui itens.</div>
+        ) : (
+          <>
+            <section className="wishlist-item-group" aria-labelledby="available-items-title">
+              <div className="wishlist-item-group-heading">
+                <h2 id="available-items-title">Disponíveis</h2>
+                <span>{availableItems.length}</span>
               </div>
-              <div className="item-row-actions">
-                <button className="icon-button" title={expanded ? "Recolher detalhes" : "Ver detalhes"} aria-label={expanded ? "Recolher detalhes" : `Ver detalhes de ${item.name}`} aria-expanded={expanded} aria-controls={hasExpandedDetails ? detailsId : undefined} onClick={() => toggleItem(item.id)}><MoreHorizontal size={18} aria-hidden /></button>
-                <a className="icon-button" href={item.original_url} target="_blank" rel="noreferrer" title="Ver item" aria-label={`Ver ${item.name}`}><ArrowUpRight size={18} aria-hidden /></a>
-                {!data.isOwner && !item.reserved && <button className="button primary compact" onClick={() => authAction(() => reserve(item.id))}>Reservar</button>}
-                {!data.isOwner && item.reserved_by_me && <button className="button compact" onClick={() => authAction(() => unreserve(item.id))}>Desfazer</button>}
-                {data.isOwner && item.reserved && <button className="icon-button danger" title="Remover reserva" aria-label="Remover reserva" onClick={() => confirm("Remover a reserva deste item?") && authAction(() => unreserve(item.id))}><EyeOff size={18} aria-hidden /></button>}
-                {data.isOwner && <button className="icon-button danger" title="Excluir item" aria-label={`Excluir ${item.name}`} onClick={() => remove(item.id)}><Trash2 size={18} aria-hidden /></button>}
+              <div className="wishlist-item-group-list">
+                {availableItems.length > 0 ? availableItems.map(renderItem) : <p className="wishlist-item-group-empty">Nenhum item disponível.</p>}
               </div>
-              {expanded && hasExpandedDetails && (
-                <div className="item-row-details" id={detailsId}>
-                  {hasDescription && <p>{item.description}</p>}
-                </div>
-              )}
-            </article>
-          );
-        })}
+            </section>
+            <section className="wishlist-item-group" aria-labelledby="reserved-items-title">
+              <div className="wishlist-item-group-heading">
+                <h2 id="reserved-items-title">Reservados</h2>
+                <span>{reservedItems.length}</span>
+              </div>
+              <div className="wishlist-item-group-list">
+                {reservedItems.length > 0 ? reservedItems.map(renderItem) : <p className="wishlist-item-group-empty">Nenhum item reservado.</p>}
+              </div>
+            </section>
+          </>
+        )}
       </section>
 
       {data.isOwner && !showItemForm && <button className="fab-add" aria-label="Adicionar item" onClick={() => setShowItemForm(true)}><Plus size={24} aria-hidden /></button>}
