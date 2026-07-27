@@ -26,8 +26,8 @@ export type Item = {
   name: string;
   description: string | null;
   image_url: string | null;
-  original_url: string;
-  domain: string;
+  original_url: string | null;
+  domain: string | null;
   created_at: string;
   updated_at: string;
   reserved: boolean;

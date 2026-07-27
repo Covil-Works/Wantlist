@@ -25,7 +25,8 @@ export const itemSchema = z.object({
   name: z.string().trim().min(2).max(140),
   description: z.string().trim().max(700).optional().nullable(),
   imageUrl: z.string().trim().url().max(1000).optional().nullable().or(z.literal("")),
-  originalUrl: z.string().trim().max(1000).transform((value, ctx) => {
+  originalUrl: z.string().trim().max(1000).optional().nullable().transform((value, ctx) => {
+    if (!value) return null;
     const normalized = normalizeProductUrl(value);
     if (!normalized.ok) {
       ctx.addIssue({ code: "custom", message: "Informe uma URL de produto válida." });
@@ -35,7 +36,8 @@ export const itemSchema = z.object({
   })
 });
 
-export function domainFromUrl(url: string) {
+export function domainFromUrl(url: string | null) {
+  if (!url) return null;
   const parsed = new URL(url);
   return parsed.hostname.replace(/^www\./, "").slice(0, 180);
 }

@@ -154,7 +154,7 @@ export default function PublicWishlistPage() {
   const shareUrl = typeof location === "undefined" ? `/w/${data.wishlist.public_code}` : `${location.origin}/w/${data.wishlist.public_code}`;
   const storeOptions = getStoreOptions(data.items);
   const filteredItems = data.items.filter((item: Item) => {
-    const matchesStore = storeFilter === "all" || resolveStore(item.domain).id === storeFilter;
+    const matchesStore = storeFilter === "all" || (item.domain !== null && resolveStore(item.domain).id === storeFilter);
     const matchesStatus = itemView === "grouped" || itemView === "all"
       || (itemView === "available" && !item.reserved)
       || (itemView === "reserved" && item.reserved);
@@ -199,12 +199,12 @@ export default function PublicWishlistPage() {
         {item.image_url ? <Image className="item-row-image" src={item.image_url} alt="" width={88} height={88} unoptimized /> : <div className="item-row-image" />}
         <div className="item-row-copy">
           <strong className="item-row-title" title={item.name}>{item.name}</strong>
-          <span className="muted">{item.domain}</span>
+          {item.domain && <span className="muted">{item.domain}</span>}
           {expanded && <span className={`badge item-status ${item.reserved ? "reserved" : "available"} item-row-copy-status`}>{item.reserved_by_me ? "Seu" : item.reserved ? "Reservado" : "Disponível"}</span>}
         </div>
         <div className="item-row-actions">
           <button className="icon-button" title={expanded ? "Recolher detalhes" : "Ver detalhes"} aria-label={expanded ? "Recolher detalhes" : `Ver detalhes de ${item.name}`} aria-expanded={expanded} aria-controls={hasExpandedDetails ? detailsId : undefined} onClick={() => toggleItem(item.id)}><MoreHorizontal size={18} aria-hidden /></button>
-          <a className="icon-button" href={item.original_url} target="_blank" rel="noreferrer" title="Ver item" aria-label={`Ver ${item.name}`}><ArrowUpRight size={18} aria-hidden /></a>
+          {item.original_url && <a className="icon-button" href={item.original_url} target="_blank" rel="noreferrer" title="Ver item" aria-label={`Ver ${item.name}`}><ArrowUpRight size={18} aria-hidden /></a>}
           {!data.isOwner && !item.reserved && <button className="button primary compact" onClick={() => authAction(() => reserve(item.id))}>Reservar</button>}
           {!data.isOwner && item.reserved_by_me && <button className="button compact" onClick={() => authAction(() => unreserve(item.id))}>Desfazer</button>}
           {data.isOwner && item.reserved && <button className="icon-button danger" title="Remover reserva" aria-label="Remover reserva" onClick={() => confirm("Remover a reserva deste item?") && authAction(() => unreserve(item.id))}><EyeOff size={18} aria-hidden /></button>}

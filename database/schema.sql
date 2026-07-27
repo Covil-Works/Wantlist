@@ -39,11 +39,14 @@ create table if not exists items (
   name varchar(140) not null,
   description varchar(700),
   image_url varchar(1000),
-  original_url varchar(1000) not null,
-  domain varchar(180) not null,
+  original_url varchar(1000),
+  domain varchar(180),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table items alter column original_url drop not null;
+alter table items alter column domain drop not null;
 
 create table if not exists followers (
   user_id uuid not null references profiles(id) on delete cascade,
