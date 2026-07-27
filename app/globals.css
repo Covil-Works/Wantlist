@@ -104,7 +104,7 @@ button, input, textarea, select, a { -webkit-tap-highlight-color: transparent; }
 .item-row-copy-status { margin-top: 2px; }
 .item-status { justify-self: end; white-space: nowrap; }
 .item-row-copy .item-row-copy-status { justify-self: start; }
-.item-status.available { background: #DDF8E8; color: #166B47; }
+.item-status.available { border-color: transparent; background: #C4E37D; color: #426C21; }
 .item-status.reserved { background: #FFD4E6; color: #8A2451; }
 .item-row-actions { display: flex; justify-content: flex-end; align-items: center; gap: 8px; }
 .item-row-details { grid-column: 2 / -1; display: grid; justify-items: start; gap: 8px; color: var(--ink); line-height: 1.55; padding: 2px 4px 4px 0; }
