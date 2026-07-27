@@ -130,7 +130,7 @@ export function ItemForm({ onSaved, onCancel }: { onSaved: () => void; onCancel?
       <label className="field"><span>Nome</span><input className="input" required maxLength={140} value={name} onChange={(e) => setName(e.target.value)} /></label>
 
       <label className="description-toggle"><input type="checkbox" checked={showDescription} onChange={(event) => { setShowDescription(event.target.checked); if (!event.target.checked) setDescription(""); }} /> <span>Adicionar descrição</span></label>
-      {showDescription && <label className="field"><span>Descrição</span><textarea className="textarea" value={description} onChange={(e) => setDescription(e.target.value)} /></label>}
+      {showDescription && <label className="field"><span>Descrição</span><textarea className="textarea" placeholder="Ex: Tamanho P, cor azul..." value={description} onChange={(e) => setDescription(e.target.value)} /></label>}
 
       {message && <p className="muted">{message}</p>}{error && <p className="error">{error}</p>}
       <div className="row">
