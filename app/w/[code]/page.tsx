@@ -4,12 +4,15 @@ import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, ArrowUpRight, Copy, Eye, EyeOff, Globe2, Home, MailPlus, MoreHorizontal, Plus, Settings, Share2, Trash2, UserPlus, X } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, Copy, Eye, EyeOff, Globe2, Home, MailPlus, MoreHorizontal, Plus, Settings, Share2, SlidersHorizontal, Trash2, UserPlus, X } from "lucide-react";
 import { api } from "@/lib/client-api";
 import { useAuth } from "@/components/auth-provider";
 import { ItemForm } from "@/components/item-form";
 import type { Item } from "@/lib/types";
+import { getStoreOptions, resolveStore } from "@/lib/store-catalog";
 
+type ItemView = "grouped" | "all" | "available" | "reserved";
+type ItemOrder = "newest" | "oldest" | "name-asc" | "name-desc";
 const visibilityOptions = [
   { value: "public", label: "Pública", description: "Qualquer pessoa com o link pode ver.", icon: Globe2 },
   { value: "invited", label: "Somente convidados", description: "Apenas pessoas convidadas acessam.", icon: UserPlus },
@@ -45,9 +48,14 @@ export default function PublicWishlistPage() {
   const [inviteCopied, setInviteCopied] = useState(false);
   const [showVisibilityMenu, setShowVisibilityMenu] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
+  const [showListControls, setShowListControls] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
+  const [itemView, setItemView] = useState<ItemView>("grouped");
+  const [itemOrder, setItemOrder] = useState<ItemOrder>("newest");
+  const [storeFilter, setStoreFilter] = useState("all");
   const shareMenuRef = useRef<HTMLDivElement>(null);
+  const listControlsRef = useRef<HTMLDivElement>(null);
 
   async function load() {
     setError("");
@@ -75,6 +83,19 @@ export default function PublicWishlistPage() {
     document.addEventListener("pointerdown", closeMenusOnOutsideClick);
     return () => document.removeEventListener("pointerdown", closeMenusOnOutsideClick);
   }, [showShareMenu, showVisibilityMenu]);
+
+  useEffect(() => {
+    if (!showListControls) return;
+
+    function closeListControlsOnOutsideClick(event: PointerEvent) {
+      if (event.target instanceof Node && !listControlsRef.current?.contains(event.target)) {
+        setShowListControls(false);
+      }
+    }
+
+    document.addEventListener("pointerdown", closeListControlsOnOutsideClick);
+    return () => document.removeEventListener("pointerdown", closeListControlsOnOutsideClick);
+  }, [showListControls]);
 
   async function authAction(fn: () => Promise<void>) {
     if (!user) { router.push("/login"); return; }
@@ -128,8 +149,36 @@ export default function PublicWishlistPage() {
   if (error) return <ContentNotFound />;
 
   const shareUrl = typeof location === "undefined" ? `/w/${data.wishlist.public_code}` : `${location.origin}/w/${data.wishlist.public_code}`;
-  const availableItems = data.items.filter((item: Item) => !item.reserved);
-  const reservedItems = data.items.filter((item: Item) => item.reserved);
+  const storeOptions = getStoreOptions(data.items);
+  const filteredItems = data.items.filter((item: Item) => {
+    const matchesStore = storeFilter === "all" || resolveStore(item.domain).id === storeFilter;
+    const matchesStatus = itemView === "grouped" || itemView === "all"
+      || (itemView === "available" && !item.reserved)
+      || (itemView === "reserved" && item.reserved);
+    return matchesStore && matchesStatus;
+  });
+  const sortedItems = [...filteredItems].sort((first: Item, second: Item) => {
+    if (itemOrder === "name-asc" || itemOrder === "name-desc") {
+      const comparison = first.name.localeCompare(second.name, "pt-BR", { sensitivity: "base", numeric: true });
+      return itemOrder === "name-asc" ? comparison : -comparison;
+    }
+
+    const comparison = new Date(second.created_at).getTime() - new Date(first.created_at).getTime();
+    return itemOrder === "newest" ? comparison : -comparison;
+  });
+  const availableItems = sortedItems.filter((item: Item) => !item.reserved);
+  const reservedItems = sortedItems.filter((item: Item) => item.reserved);
+  const activeControlCount = Number(itemView !== "grouped") + Number(itemOrder !== "newest") + Number(storeFilter !== "all");
+  const itemSections = itemView === "grouped"
+    ? [
+        { id: "available-items", title: "Disponíveis", items: availableItems },
+        { id: "reserved-items", title: "Reservados", items: reservedItems },
+      ]
+    : [{
+        id: `${itemView}-items`,
+        title: itemView === "all" ? "Todos os itens" : itemView === "available" ? "Disponíveis" : "Reservados",
+        items: sortedItems,
+      }];
 
   function renderItem(item: Item) {
     const expanded = expandedItemId === item.id;
@@ -163,6 +212,12 @@ export default function PublicWishlistPage() {
         )}
       </article>
     );
+  }
+
+  function clearListControls() {
+    setItemView("grouped");
+    setItemOrder("newest");
+    setStoreFilter("all");
   }
 
   return (
@@ -259,24 +314,64 @@ export default function PublicWishlistPage() {
           <div className="empty">Esta wishlist ainda não possui itens.</div>
         ) : (
           <>
-            <section className="wishlist-item-group" aria-labelledby="available-items-title">
-              <div className="wishlist-item-group-heading">
-                <h2 id="available-items-title">Disponíveis</h2>
-                <span>{availableItems.length}</span>
+            <div className="wishlist-list-toolbar">
+              <span className="muted" aria-live="polite">{sortedItems.length} de {data.items.length} itens</span>
+              <div className="menu-wrap" ref={listControlsRef}>
+                <button
+                  className={`button wishlist-filter-button${activeControlCount > 0 ? " active" : ""}`}
+                  aria-expanded={showListControls}
+                  aria-controls="wishlist-list-controls"
+                  onClick={() => setShowListControls((value) => !value)}
+                >
+                  <SlidersHorizontal size={18} aria-hidden />
+                  Filtrar e ordenar
+                  {activeControlCount > 0 && <span className="wishlist-filter-count" aria-label={`${activeControlCount} opções alteradas`}>{activeControlCount}</span>}
+                </button>
+                {showListControls && (
+                  <div className="dropdown-menu wishlist-list-controls" id="wishlist-list-controls" role="dialog" aria-label="Filtrar e ordenar itens">
+                    <label className="field">
+                      <span>Ordenar por</span>
+                      <select className="select" value={itemOrder} onChange={(event) => setItemOrder(event.target.value as ItemOrder)}>
+                        <option value="newest">Inclusão mais recente</option>
+                        <option value="oldest">Inclusão mais antiga</option>
+                        <option value="name-asc">Nome de A a Z</option>
+                        <option value="name-desc">Nome de Z a A</option>
+                      </select>
+                    </label>
+                    <label className="field">
+                      <span>Filtrar por</span>
+                      <select className="select" value={itemView} onChange={(event) => setItemView(event.target.value as ItemView)}>
+                        <option value="grouped">Separados por status</option>
+                        <option value="all">Todos juntos</option>
+                        <option value="available">Somente disponíveis</option>
+                        <option value="reserved">Somente reservados</option>
+                      </select>
+                    </label>
+                    <label className="field">
+                      <span>Loja</span>
+                      <select className="select" value={storeFilter} onChange={(event) => setStoreFilter(event.target.value)}>
+                        <option value="all">Todas as lojas</option>
+                        {storeOptions.map((store) => <option value={store.id} key={store.id}>{store.label}</option>)}
+                      </select>
+                    </label>
+                    {activeControlCount > 0 && <button className="button wishlist-clear-filters" onClick={clearListControls}>Restaurar padrão</button>}
+                  </div>
+                )}
               </div>
-              <div className="wishlist-item-group-list">
-                {availableItems.length > 0 ? availableItems.map(renderItem) : <p className="wishlist-item-group-empty">Nenhum item disponível.</p>}
-              </div>
-            </section>
-            <section className="wishlist-item-group" aria-labelledby="reserved-items-title">
-              <div className="wishlist-item-group-heading">
-                <h2 id="reserved-items-title">Reservados</h2>
-                <span>{reservedItems.length}</span>
-              </div>
-              <div className="wishlist-item-group-list">
-                {reservedItems.length > 0 ? reservedItems.map(renderItem) : <p className="wishlist-item-group-empty">Nenhum item reservado.</p>}
-              </div>
-            </section>
+            </div>
+            {itemSections.map((section) => (
+              <section className="wishlist-item-group" aria-labelledby={`${section.id}-title`} key={section.id}>
+                <div className="wishlist-item-group-heading">
+                  <h2 id={`${section.id}-title`}>{section.title}</h2>
+                  <span>{section.items.length}</span>
+                </div>
+                <div className="wishlist-item-group-list">
+                  {section.items.length > 0
+                    ? section.items.map(renderItem)
+                    : <p className="wishlist-item-group-empty">Nenhum item corresponde aos filtros.</p>}
+                </div>
+              </section>
+            ))}
           </>
         )}
       </section>
