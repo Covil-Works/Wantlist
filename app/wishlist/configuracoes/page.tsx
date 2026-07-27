@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, Copy, RefreshCw, Trash2, UserPlus, XCircle } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Copy, RefreshCw, Trash2, UserPlus, XCircle } from "lucide-react";
 import { Protected } from "@/components/protected";
 import { api } from "@/lib/client-api";
 
@@ -120,6 +121,9 @@ export default function SettingsPage() {
   return (
     <Protected>
       <main className="page stack settings-page">
+        <Link className="icon-button page-nav-button" href="/painel" title="Voltar ao painel" aria-label="Voltar ao painel">
+          <ArrowLeft size={18} aria-hidden />
+        </Link>
         <h1>Configurações da wishlist</h1>
         {error && <p className="error">{error}</p>}
         {!data?.wishlist ? <div className="empty">Crie sua wishlist primeiro.</div> : (

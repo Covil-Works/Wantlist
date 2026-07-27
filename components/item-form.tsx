@@ -125,7 +125,7 @@ export function ItemForm({ onSaved, onCancel }: { onSaved: () => void; onCancel?
       {imageUrl && !imageFailed && <img className="metadata-preview-image" src={imageUrl} alt="Prévia do produto" onError={() => setImageFailed(true)} />}
       {imageUrl && imageFailed && <p className="metadata-note"><ImageOff size={16} aria-hidden /> A imagem encontrada não pôde ser carregada.</p>}
 
-      <label className="field"><span>URL do produto</span><input className="input" required inputMode="url" value={originalUrl} onChange={(e) => setOriginalUrl(e.target.value)} /></label>
+      <label className="field"><span>Link do produto</span><input className="input" required inputMode="url" value={originalUrl} onChange={(e) => setOriginalUrl(e.target.value)} /></label>
       {extractionMessage && <p className={`metadata-note ${extractionState === "loading" ? "loading" : ""}`}>{extractionState === "loading" && <Loader2 size={16} aria-hidden />}{extractionMessage}</p>}
       <label className="field"><span>Nome</span><input className="input" required maxLength={140} value={name} onChange={(e) => setName(e.target.value)} /></label>
 
