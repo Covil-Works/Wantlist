@@ -24,7 +24,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
     });
   }, []);
-  const value = useMemo(() => ({ user, loading, token: () => user?.getIdToken() ?? Promise.resolve(null) }), [user]);
+  const value = useMemo(() => ({ user, loading, token: () => user?.getIdToken() ?? Promise.resolve(null) }), [user, loading]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
