@@ -4,12 +4,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, ArrowUpRight, Copy, Eye, EyeOff, Globe2, Home, MailPlus, MoreHorizontal, Plus, Settings, Share2, SlidersHorizontal, Trash2, UserPlus, X } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, Copy, Eye, EyeOff, Globe2, Home, MailPlus, MoreHorizontal, Plus, Search, Settings, Share2, SlidersHorizontal, Trash2, UserPlus, X } from "lucide-react";
 import { api } from "@/lib/client-api";
 import { useAuth } from "@/components/auth-provider";
 import { ItemForm } from "@/components/item-form";
 import type { Item } from "@/lib/types";
 import { getStoreOptions, resolveStore } from "@/lib/store-catalog";
+import { searchItems } from "@/lib/item-search";
 
 type ItemView = "grouped" | "all" | "available" | "reserved";
 type ItemOrder = "newest" | "oldest" | "name-asc" | "name-desc";
@@ -49,11 +50,13 @@ export default function PublicWishlistPage() {
   const [showVisibilityMenu, setShowVisibilityMenu] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [showListControls, setShowListControls] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
   const [itemView, setItemView] = useState<ItemView>("grouped");
   const [itemOrder, setItemOrder] = useState<ItemOrder>("newest");
   const [storeFilter, setStoreFilter] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const shareMenuRef = useRef<HTMLDivElement>(null);
   const listControlsRef = useRef<HTMLDivElement>(null);
 
@@ -157,7 +160,7 @@ export default function PublicWishlistPage() {
       || (itemView === "reserved" && item.reserved);
     return matchesStore && matchesStatus;
   });
-  const sortedItems = [...filteredItems].sort((first: Item, second: Item) => {
+  const orderedItems = [...filteredItems].sort((first: Item, second: Item) => {
     if (itemOrder === "name-asc" || itemOrder === "name-desc") {
       const comparison = first.name.localeCompare(second.name, "pt-BR", { sensitivity: "base", numeric: true });
       return itemOrder === "name-asc" ? comparison : -comparison;
@@ -166,9 +169,11 @@ export default function PublicWishlistPage() {
     const comparison = new Date(second.created_at).getTime() - new Date(first.created_at).getTime();
     return itemOrder === "newest" ? comparison : -comparison;
   });
+  const sortedItems = searchItems(orderedItems, searchQuery);
   const availableItems = sortedItems.filter((item: Item) => !item.reserved);
   const reservedItems = sortedItems.filter((item: Item) => item.reserved);
   const activeControlCount = Number(itemView !== "grouped") + Number(itemOrder !== "newest") + Number(storeFilter !== "all");
+  const emptyItemsMessage = searchQuery.trim() ? "Nenhum item corresponde à busca." : "Nenhum item corresponde aos filtros.";
   const itemSections = itemView === "grouped"
     ? [
         { id: "available-items", title: "Disponíveis", items: availableItems },
@@ -218,6 +223,11 @@ export default function PublicWishlistPage() {
     setItemView("grouped");
     setItemOrder("newest");
     setStoreFilter("all");
+  }
+
+  function closeSearch() {
+    setShowSearch(false);
+    setSearchQuery("");
   }
 
   return (
@@ -315,49 +325,82 @@ export default function PublicWishlistPage() {
         ) : (
           <>
             <div className="wishlist-list-toolbar">
-              <span className="muted" aria-live="polite">{sortedItems.length} de {data.items.length} itens</span>
-              <div className="menu-wrap" ref={listControlsRef}>
-                <button
-                  className={`button wishlist-filter-button${activeControlCount > 0 ? " active" : ""}`}
-                  aria-expanded={showListControls}
-                  aria-controls="wishlist-list-controls"
-                  onClick={() => setShowListControls((value) => !value)}
-                >
-                  <SlidersHorizontal size={18} aria-hidden />
-                  Filtrar e ordenar
-                  {activeControlCount > 0 && <span className="wishlist-filter-count" aria-label={`${activeControlCount} opções alteradas`}>{activeControlCount}</span>}
-                </button>
-                {showListControls && (
-                  <div className="dropdown-menu wishlist-list-controls" id="wishlist-list-controls" role="dialog" aria-label="Filtrar e ordenar itens">
-                    <label className="field">
-                      <span>Ordenar por</span>
-                      <select className="select" value={itemOrder} onChange={(event) => setItemOrder(event.target.value as ItemOrder)}>
-                        <option value="newest">Inclusão mais recente</option>
-                        <option value="oldest">Inclusão mais antiga</option>
-                        <option value="name-asc">Nome de A a Z</option>
-                        <option value="name-desc">Nome de Z a A</option>
-                      </select>
-                    </label>
-                    <label className="field">
-                      <span>Filtrar por</span>
-                      <select className="select" value={itemView} onChange={(event) => setItemView(event.target.value as ItemView)}>
-                        <option value="grouped">Separados por status</option>
-                        <option value="all">Todos juntos</option>
-                        <option value="available">Somente disponíveis</option>
-                        <option value="reserved">Somente reservados</option>
-                      </select>
-                    </label>
-                    <label className="field">
-                      <span>Loja</span>
-                      <select className="select" value={storeFilter} onChange={(event) => setStoreFilter(event.target.value)}>
-                        <option value="all">Todas as lojas</option>
-                        {storeOptions.map((store) => <option value={store.id} key={store.id}>{store.label}</option>)}
-                      </select>
-                    </label>
-                    {activeControlCount > 0 && <button className="button wishlist-clear-filters" onClick={clearListControls}>Restaurar padrão</button>}
+              <div className="wishlist-list-toolbar-row">
+                <span className="muted" aria-live="polite">{sortedItems.length} de {data.items.length} itens</span>
+                <div className="wishlist-list-toolbar-actions">
+                  <button
+                    className={`icon-button wishlist-search-button${searchQuery ? " active" : ""}`}
+                    title={showSearch ? "Fechar pesquisa" : "Pesquisar itens"}
+                    aria-label={showSearch ? "Fechar pesquisa" : "Pesquisar itens"}
+                    aria-expanded={showSearch}
+                    aria-controls="wishlist-search-field"
+                    onClick={() => showSearch ? closeSearch() : setShowSearch(true)}
+                  >
+                    <Search size={18} aria-hidden />
+                  </button>
+                  <div className="menu-wrap" ref={listControlsRef}>
+                    <button
+                      className={`icon-button wishlist-filter-button${activeControlCount > 0 ? " active" : ""}`}
+                      title="Filtrar e ordenar"
+                      aria-label="Filtrar e ordenar"
+                      aria-expanded={showListControls}
+                      aria-controls="wishlist-list-controls"
+                      onClick={() => setShowListControls((value) => !value)}
+                    >
+                      <SlidersHorizontal size={18} aria-hidden />
+                    </button>
+                    {showListControls && (
+                      <div className="dropdown-menu wishlist-list-controls" id="wishlist-list-controls" role="dialog" aria-label="Filtrar e ordenar itens">
+                        <label className="field">
+                          <span>Ordenar por</span>
+                          <select className="select" value={itemOrder} onChange={(event) => setItemOrder(event.target.value as ItemOrder)}>
+                            <option value="newest">Inclusão mais recente</option>
+                            <option value="oldest">Inclusão mais antiga</option>
+                            <option value="name-asc">Nome de A a Z</option>
+                            <option value="name-desc">Nome de Z a A</option>
+                          </select>
+                        </label>
+                        <label className="field">
+                          <span>Filtrar por</span>
+                          <select className="select" value={itemView} onChange={(event) => setItemView(event.target.value as ItemView)}>
+                            <option value="grouped">Separados por status</option>
+                            <option value="all">Todos juntos</option>
+                            <option value="available">Somente disponíveis</option>
+                            <option value="reserved">Somente reservados</option>
+                          </select>
+                        </label>
+                        <label className="field">
+                          <span>Loja</span>
+                          <select className="select" value={storeFilter} onChange={(event) => setStoreFilter(event.target.value)}>
+                            <option value="all">Todas as lojas</option>
+                            {storeOptions.map((store) => <option value={store.id} key={store.id}>{store.label}</option>)}
+                          </select>
+                        </label>
+                        {activeControlCount > 0 && <button className="button wishlist-clear-filters" onClick={clearListControls}>Restaurar padrão</button>}
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
               </div>
+              {showSearch && (
+                <div className="wishlist-search-field" id="wishlist-search-field">
+                  <label className="sr-only" htmlFor="wishlist-search-input">Pesquisar por nome ou descrição</label>
+                  <Search size={18} aria-hidden />
+                  <input
+                    className="input"
+                    id="wishlist-search-input"
+                    type="search"
+                    placeholder="Pesquisar por nome ou descrição"
+                    value={searchQuery}
+                    onChange={(event) => setSearchQuery(event.target.value)}
+                    onKeyDown={(event) => { if (event.key === "Escape") closeSearch(); }}
+                    autoFocus
+                  />
+                  <button className="wishlist-search-close" type="button" title="Fechar pesquisa" aria-label="Fechar pesquisa" onClick={closeSearch}>
+                    <X size={18} aria-hidden />
+                  </button>
+                </div>
+              )}
             </div>
             {itemSections.map((section) => (
               <section className="wishlist-item-group" aria-labelledby={`${section.id}-title`} key={section.id}>
@@ -368,7 +411,7 @@ export default function PublicWishlistPage() {
                 <div className="wishlist-item-group-list">
                   {section.items.length > 0
                     ? section.items.map(renderItem)
-                    : <p className="wishlist-item-group-empty">Nenhum item corresponde aos filtros.</p>}
+                    : <p className="wishlist-item-group-empty">{emptyItemsMessage}</p>}
                 </div>
               </section>
             ))}
