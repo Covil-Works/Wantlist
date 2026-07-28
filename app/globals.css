@@ -51,6 +51,9 @@ button, input, textarea, select, a { -webkit-tap-highlight-color: transparent; }
 .page { width: min(1120px, calc(100% - 32px)); margin: 0 auto; padding: 32px 0 56px; }
 .hero { padding: 52px 0 28px; display: grid; grid-template-columns: 1.1fr .9fr; gap: 32px; align-items: center; }
 .hero h1 { font-size: 56px; line-height: 1; letter-spacing: -0.03em; margin: 0 0 18px; text-wrap: balance; }
+.home-wordmark { position: relative; isolation: isolate; display: inline-block; color: #4A2D24; }
+.home-wordmark::before { content: ""; position: absolute; z-index: -1; left: -4px; right: -10px; bottom: 2px; height: 14px; border-radius: 999px; background: var(--accent); transform: rotate(-2deg); }
+.home-wordmark::after { content: "✦"; position: absolute; top: -13px; right: -27px; color: var(--primary); font-size: 22px; line-height: 1; transform: rotate(10deg); }
 .hero h1::selection, .lead::selection { background: var(--accent); color: var(--ink); }
 .hero-highlight { display: inline; background: linear-gradient(to top, var(--accent) 36%, transparent 36%); color: var(--ink); }
 .lead { color: var(--muted); font-size: 18px; line-height: 1.6; max-width: 64ch; }
