@@ -33,6 +33,11 @@ button, input, textarea, select, a { -webkit-tap-highlight-color: transparent; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 
 .shell { min-height: 100vh; display: flex; flex-direction: column; }
+.site-footer { margin-top: auto; border-top: 1px solid var(--line); color: var(--muted); }
+.site-footer-inner { width: min(1120px, calc(100% - 32px)); margin: 0 auto; padding: 20px 0; text-align: center; font-size: 13px; line-height: 1.5; }
+.site-footer a { color: inherit; font-weight: 650; text-underline-offset: 3px; }
+.site-footer a:hover { color: var(--ink); }
+.site-footer a:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 3px; border-radius: 2px; }
 .topbar { position: sticky; top: 0; z-index: 10; background: rgba(247, 243, 235, .92); border-bottom: 1px solid var(--line); backdrop-filter: blur(10px); }
 .topbar-inner { width: min(1120px, calc(100% - 32px)); margin: 0 auto; padding: 14px 0; display: flex; gap: 16px; align-items: center; justify-content: space-between; }
 .topbar .button, .topbar .icon-button { background: var(--bg); }
