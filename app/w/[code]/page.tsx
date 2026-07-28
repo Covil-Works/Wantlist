@@ -229,6 +229,13 @@ export default function PublicWishlistPage() {
         items: sortedItems,
       }];
 
+  function openItemForm() {
+    setShowItemForm(true);
+    window.setTimeout(() => {
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      document.querySelector<HTMLElement>(".item-form")?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+    }, 0);
+  }
   function openPodiumItem(id: string) {
     setItemView("grouped");
     setStoreFilter("all");
@@ -442,7 +449,7 @@ export default function PublicWishlistPage() {
 
       <section className="item-list" aria-label="Itens da wishlist">
         {data.isOwner && !showItemForm && (
-          <button className="button primary add-item-inline" onClick={() => setShowItemForm(true)}><Plus size={18} aria-hidden />Adicionar item</button>
+          <button className="button primary add-item-inline" onClick={openItemForm}><Plus size={18} aria-hidden />Adicionar item</button>
         )}
         {data.isOwner && showItemForm && <ItemForm onCancel={() => setShowItemForm(false)} onSaved={() => { setShowItemForm(false); load(); }} />}
         {data.items.length === 0 ? (
@@ -546,7 +553,7 @@ export default function PublicWishlistPage() {
         )}
       </section>
 
-      {data.isOwner && !showItemForm && <button className="fab-add" aria-label="Adicionar item" onClick={() => setShowItemForm(true)}><Plus size={24} aria-hidden /></button>}
+      {data.isOwner && !showItemForm && <button className="fab-add" aria-label="Adicionar item" onClick={openItemForm}><Plus size={24} aria-hidden /></button>}
     </main>
   );
 }

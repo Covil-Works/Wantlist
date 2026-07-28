@@ -165,7 +165,7 @@ button, input, textarea, select, a { -webkit-tap-highlight-color: transparent; }
 .form-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; }
 .form-heading h2 { margin: 0 0 4px; font-size: 20px; line-height: 1.2; }
 .form-heading p { margin: 0; }
-.item-form { background: var(--surface); }
+.item-form { scroll-margin-block-start: 24px; background: var(--surface); }
 .add-item-inline { justify-self: start; }
 .menu-wrap { position: relative; }
 .dropdown-menu { position: absolute; top: calc(100% + 8px); right: 0; z-index: 20; width: min(320px, calc(100vw - 32px)); display: grid; gap: 6px; padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); box-shadow: 0 8px 24px rgba(35, 31, 44, .1); }
