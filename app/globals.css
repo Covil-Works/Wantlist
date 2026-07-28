@@ -94,10 +94,10 @@ button, input, textarea, select, a { -webkit-tap-highlight-color: transparent; }
 .item-body { padding: 14px; display: grid; gap: 10px; }
 .wishlist-topbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 .wishlist-header { display: grid; gap: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
-.wishlist-kicker { color: var(--primary); font-size: 14px; font-weight: 700; }
 .wishlist-header h1 { margin: 0; font-size: 32px; line-height: 1.15; letter-spacing: 0; text-wrap: balance; }
 .wishlist-header p { margin: 0; }
 .wishlist-meta { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.wishlist-meta strong { color: var(--primary); }
 .wishlist-meta span { display: inline-flex; gap: 4px; align-items: center; }
 .wishlist-meta span + span::before { content: ""; width: 4px; height: 4px; border-radius: 999px; background: var(--line); margin-right: 6px; }
 .podium { overflow: hidden; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); }

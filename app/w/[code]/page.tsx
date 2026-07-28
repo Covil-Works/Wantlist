@@ -372,7 +372,6 @@ export default function PublicWishlistPage() {
       </div>
 
       <header className="wishlist-header">
-        <span className="wishlist-kicker">Minha lista de desejos</span>
         <h1>{data.wishlist.title}</h1>
         <p className="muted wishlist-meta">
           <span>Wishlist de <strong>{data.wishlist.owner_name}</strong></span>
