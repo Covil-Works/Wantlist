@@ -28,6 +28,7 @@ export type Item = {
   image_url: string | null;
   original_url: string | null;
   domain: string | null;
+  podium_position: 1 | 2 | 3 | null;
   created_at: string;
   updated_at: string;
   reserved: boolean;

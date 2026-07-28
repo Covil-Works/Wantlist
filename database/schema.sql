@@ -41,12 +41,23 @@ create table if not exists items (
   image_url varchar(1000),
   original_url varchar(1000),
   domain varchar(180),
+  podium_position smallint,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  constraint items_podium_position_check check (podium_position between 1 and 3)
 );
 
 alter table items alter column original_url drop not null;
 alter table items alter column domain drop not null;
+alter table items add column if not exists podium_position smallint;
+
+do $$ begin
+  alter table items add constraint items_podium_position_check check (podium_position between 1 and 3);
+exception when duplicate_object then null; end $$;
+
+create unique index if not exists items_wishlist_podium_position_unique
+  on items (wishlist_id, podium_position)
+  where podium_position is not null;
 
 create table if not exists followers (
   user_id uuid not null references profiles(id) on delete cascade,

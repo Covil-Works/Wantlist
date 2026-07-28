@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, ArrowUpRight, Copy, Eye, EyeOff, Globe2, Home, MailPlus, MoreHorizontal, Plus, Search, Settings, Share2, SlidersHorizontal, Trash2, UserPlus, X } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, ChevronDown, Copy, Crown, Eye, EyeOff, Globe2, Home, MailPlus, Medal, MoreHorizontal, Plus, Search, Settings, Share2, SlidersHorizontal, Trash2, UserPlus, X } from "lucide-react";
 import { api } from "@/lib/client-api";
 import { useAuth } from "@/components/auth-provider";
 import { ItemForm } from "@/components/item-form";
@@ -176,6 +176,10 @@ export default function PublicWishlistPage() {
 
   async function reserve(id: string) { await api(`/api/items/${id}/reserve`, { method: "POST" }); }
   async function unreserve(id: string) { await api(`/api/items/${id}/reserve`, { method: "DELETE" }); }
+  async function setPodiumPosition(id: string, position: 1 | 2 | 3 | null) {
+    await api(`/api/items/${id}/podium`, { method: "PATCH", body: JSON.stringify({ position }) });
+    await load();
+  }
   async function remove(id: string) {
     if (confirm("Excluir este item definitivamente?")) {
       await api(`/api/items/${id}`, { method: "DELETE" }); await load();
@@ -206,6 +210,12 @@ export default function PublicWishlistPage() {
   const sortedItems = searchItems(orderedItems, searchQuery);
   const availableItems = sortedItems.filter((item: Item) => !item.reserved);
   const reservedItems = sortedItems.filter((item: Item) => item.reserved);
+  const podiumItems = ([1, 2, 3] as const).map((position) => ({
+    position,
+    item: data.items.find((item: Item) => item.podium_position === position) as Item | undefined,
+  }));
+  const podiumItemCount = podiumItems.filter(({ item }) => item).length;
+
   const activeControlCount = Number(itemView !== "grouped") + Number(itemOrder !== "newest") + Number(storeFilter !== "all");
   const emptyItemsMessage = searchQuery.trim() ? "Nenhum item corresponde à busca." : "Nenhum item corresponde aos filtros.";
   const itemSections = itemView === "grouped"
@@ -219,6 +229,23 @@ export default function PublicWishlistPage() {
         items: sortedItems,
       }];
 
+  function openItemForm() {
+    setShowItemForm(true);
+    window.setTimeout(() => {
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      document.querySelector<HTMLElement>(".item-form")?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+    }, 0);
+  }
+  function openPodiumItem(id: string) {
+    setItemView("grouped");
+    setStoreFilter("all");
+    setSearchQuery("");
+    setExpandedItemId(id);
+    window.setTimeout(() => {
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      document.getElementById(`wishlist-item-${id}`)?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
+    }, 0);
+  }
   function renderItem(item: Item) {
     const expanded = expandedItemId === item.id;
     const hasDescription = Boolean(item.description);
@@ -228,6 +255,7 @@ export default function PublicWishlistPage() {
     return (
       <article
         className={`item-row${expanded ? " expanded" : ""}`}
+        id={`wishlist-item-${item.id}`}
         key={item.id}
       >
         {item.image_url ? <Image className="item-row-image" src={item.image_url} alt="" width={88} height={88} unoptimized /> : <div className="item-row-image" />}
@@ -247,6 +275,29 @@ export default function PublicWishlistPage() {
         {expanded && hasExpandedDetails && (
           <div className="item-row-details" id={detailsId}>
             {hasDescription && <p>{item.description}</p>}
+            {data.isOwner && (
+              <div className="podium-picker" aria-label={`Definir prioridade de ${item.name}`}>
+                <span>Prioridade</span>
+                <div className="podium-picker-actions">
+                  {([1, 2, 3] as const).map((position) => (
+                    <button
+                      className={`button compact${item.podium_position === position ? " podium-selected" : ""}`}
+                      type="button"
+                      aria-pressed={item.podium_position === position}
+                      onClick={() => setPodiumPosition(item.id, position)}
+                      key={position}
+                    >
+                      <Medal size={16} aria-hidden />Top {position}
+                    </button>
+                  ))}
+                  {item.podium_position && (
+                    <button className="button compact" type="button" onClick={() => setPodiumPosition(item.id, null)}>
+                      Remover do pódio
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </article>
@@ -321,12 +372,59 @@ export default function PublicWishlistPage() {
       </div>
 
       <header className="wishlist-header">
-        <span className="wishlist-kicker">Minha lista de desejos</span>
         <h1>{data.wishlist.title}</h1>
         <p className="muted wishlist-meta">
           <span>Wishlist de <strong>{data.wishlist.owner_name}</strong></span>
         </p>
       </header>
+
+      {podiumItemCount > 0 && (
+        <details className="podium">
+        <summary className="podium-summary">
+          <span className="podium-summary-icon"><Crown size={20} aria-hidden /></span>
+          <span className="podium-heading">
+            <strong>Mais desejados</strong>
+            <span className="muted">
+              {`${podiumItemCount} ${podiumItemCount === 1 ? "item em destaque" : "itens em destaque"}`}
+            </span>
+          </span>
+          <ChevronDown className="podium-chevron" size={20} aria-hidden />
+        </summary>
+        <div className="podium-content">
+          <p className="muted podium-intro">As três maiores prioridades desta lista.</p>
+          <div className="podium-list">
+            {podiumItems.map(({ position, item }) => (
+              <button
+                className={`podium-item podium-position-${position}${item ? "" : " empty"}`}
+                type="button"
+                disabled={!item}
+                onClick={() => item && openPodiumItem(item.id)}
+                aria-label={item ? `Abrir ${item.name} na lista` : `Top ${position} ainda não definido`}
+                key={position}
+              >
+                <span className="podium-rank" aria-label={`${position}º lugar`}>{position}</span>
+                {item ? (
+                  <>
+                    {item.image_url
+                      ? <Image className="podium-image" src={item.image_url} alt="" width={72} height={72} unoptimized />
+                      : <div className="podium-image podium-image-placeholder"><Medal size={24} aria-hidden /></div>}
+                    <div className="podium-copy">
+                      <strong title={item.name}>{item.name}</strong>
+                      {item.domain && <span className="muted">{item.domain}</span>}
+                    </div>
+                  </>
+                ) : (
+                  <div className="podium-empty-copy">
+                    <strong>Top {position}</strong>
+                    <span>{data.isOwner ? "Abra um item e escolha esta posição." : "Posição ainda não definida."}</span>
+                  </div>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+        </details>
+      )}
 
       {data.isOwner && showInviteModal && (
         <div className="modal-backdrop" role="presentation" onClick={() => setShowInviteModal(false)}>
@@ -350,7 +448,7 @@ export default function PublicWishlistPage() {
 
       <section className="item-list" aria-label="Itens da wishlist">
         {data.isOwner && !showItemForm && (
-          <button className="button primary add-item-inline" onClick={() => setShowItemForm(true)}><Plus size={18} aria-hidden />Adicionar item</button>
+          <button className="button primary add-item-inline" onClick={openItemForm}><Plus size={18} aria-hidden />Adicionar item</button>
         )}
         {data.isOwner && showItemForm && <ItemForm onCancel={() => setShowItemForm(false)} onSaved={() => { setShowItemForm(false); load(); }} />}
         {data.items.length === 0 ? (
@@ -436,11 +534,13 @@ export default function PublicWishlistPage() {
               )}
             </div>
             {itemSections.map((section) => (
-              <section className="wishlist-item-group" aria-labelledby={`${section.id}-title`} key={section.id}>
-                <div className="wishlist-item-group-heading">
-                  <h2 id={`${section.id}-title`}>{section.title}</h2>
-                  <span>{section.items.length}</span>
-                </div>
+              <section className="wishlist-item-group" aria-label={section.id === "available-items" ? "Itens disponíveis" : undefined} aria-labelledby={section.id !== "available-items" ? `${section.id}-title` : undefined} key={section.id}>
+                {section.id !== "available-items" && (
+                  <div className="wishlist-item-group-heading">
+                    <h2 id={`${section.id}-title`}>{section.title}</h2>
+                    <span>{section.items.length}</span>
+                  </div>
+                )}
                 <div className="wishlist-item-group-list">
                   {section.items.length > 0
                     ? section.items.map(renderItem)
@@ -452,7 +552,7 @@ export default function PublicWishlistPage() {
         )}
       </section>
 
-      {data.isOwner && !showItemForm && <button className="fab-add" aria-label="Adicionar item" onClick={() => setShowItemForm(true)}><Plus size={24} aria-hidden /></button>}
+      {data.isOwner && !showItemForm && <button className="fab-add" aria-label="Adicionar item" onClick={openItemForm}><Plus size={24} aria-hidden /></button>}
     </main>
   );
 }

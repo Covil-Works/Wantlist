@@ -34,6 +34,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </div>
             </header>
             {children}
+            <footer className="site-footer">
+              <div className="site-footer-inner">© 2026 MyWL - <a href="https://covildev.com" target="_blank" rel="noreferrer">Covil Dev</a>. Todos os direitos reservados.</div>
+            </footer>
           </div>
         </AuthProvider>
       </body>

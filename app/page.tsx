@@ -17,7 +17,7 @@ export default async function HomePage() {
     <main className="page">
       <section className="hero">
         <div>
-          <h1>Uma lista de desejos para <span className="hero-highlight">qualquer loja</span>.</h1>
+          <h1 className="home-wordmark">MyWL</h1>
           <p className="lead">
             Reúna produtos de sites diferentes, compartilhe por link e deixe amigos reservarem itens sem revelar quem reservou.
           </p>
