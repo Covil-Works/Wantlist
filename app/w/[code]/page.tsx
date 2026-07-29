@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowUpRight, ChevronDown, Copy, Crown, Eye, EyeOff, Globe2, Home, MailPlus, Medal, MoreHorizontal, Plus, Search, Settings, Share2, SlidersHorizontal, Trash2, UserPlus, X } from "lucide-react";
-import { api } from "@/lib/client-api";
+import { api, ApiError } from "@/lib/client-api";
 import { useAuth } from "@/components/auth-provider";
 import { ItemForm } from "@/components/item-form";
 import type { Item } from "@/lib/types";
@@ -37,6 +37,31 @@ function ContentNotFound() {
   );
 }
 
+function ContentLoadError({ status, onRetry }: { status?: number; onRetry: () => void }) {
+  const hasHttpStatus = status !== undefined;
+  const message = status !== undefined && status >= 500
+    ? "O servidor encontrou um problema temporário. Tente novamente em alguns instantes."
+    : status === 429
+      ? "Foram feitas muitas tentativas. Aguarde um instante e tente novamente."
+      : hasHttpStatus
+        ? "A solicitação não pôde ser concluída. Tente carregar a lista novamente."
+        : "Verifique sua conexão e tente carregar a lista novamente.";
+
+  return (
+    <main className="page not-found-page">
+      <section className="not-found-panel" role="alert">
+        <strong>{hasHttpStatus ? `Erro ${status}` : "Falha de conexão"}</strong>
+        <h1>Não foi possível carregar a lista</h1>
+        <p>{message}</p>
+        <div className="row">
+          <button className="button primary" type="button" onClick={onRetry}>Tentar novamente</button>
+          <Link className="button" href="/"><Home size={18} aria-hidden />Ir para o início</Link>
+        </div>
+      </section>
+    </main>
+  );
+}
+
 export default function PublicWishlistPage() {
   const { code } = useParams<{ code: string }>();
   const { user } = useAuth();
@@ -44,7 +69,7 @@ export default function PublicWishlistPage() {
   const searchParams = useSearchParams();
   const pendingAction = searchParams.get("action");
   const [data, setData] = useState<any>(null);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<{ status?: number } | null>(null);
   const [showItemForm, setShowItemForm] = useState(false);
   const [inviteUrl, setInviteUrl] = useState("");
   const [shareCopied, setShareCopied] = useState(false);
@@ -64,10 +89,12 @@ export default function PublicWishlistPage() {
   const pendingActionHandledRef = useRef(false);
 
   async function load() {
-    setError("");
+    setError(null);
     setData(null);
     try { setData(await api(`/api/wishlist/${code}`)); }
-    catch { setError("not-found"); }
+    catch (loadError) {
+      setError(loadError instanceof ApiError ? { status: loadError.status } : {});
+    }
   }
 
   useEffect(() => { load(); }, [code, user]);
@@ -187,7 +214,8 @@ export default function PublicWishlistPage() {
   }
 
   if (!data && !error) return <main className="page"><div className="empty">Carregando wishlist.</div></main>;
-  if (error) return <ContentNotFound />;
+  if (error?.status === 404) return <ContentNotFound />;
+  if (error) return <ContentLoadError status={error.status} onRetry={load} />;
 
   const shareUrl = typeof location === "undefined" ? `/w/${data.wishlist.public_code}` : `${location.origin}/w/${data.wishlist.public_code}`;
   const storeOptions = getStoreOptions(data.items);

@@ -2,6 +2,13 @@
 
 import { auth } from "@/lib/firebase-client";
 
+export class ApiError extends Error {
+  constructor(message: string, public readonly status: number) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
 function redirectToOnboarding() {
   if (typeof window !== "undefined" && window.location.pathname !== "/onboarding") {
     window.location.replace("/onboarding");
@@ -28,7 +35,7 @@ export async function api(path: string, init: RequestInit = {}) {
   if (!res.ok) {
     const message = data.error || "Erro inesperado.";
     if (res.status === 403 && message.includes("Perfil incompleto")) redirectToOnboarding();
-    throw new Error(message);
+    throw new ApiError(message, res.status);
   }
 
   return data;
