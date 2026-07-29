@@ -38,7 +38,7 @@ button, input, textarea, select, a { -webkit-tap-highlight-color: transparent; }
 .site-footer a { color: inherit; font-weight: 650; text-underline-offset: 3px; }
 .site-footer a:hover { color: var(--ink); }
 .site-footer a:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 3px; border-radius: 2px; }
-.topbar { position: sticky; top: 0; z-index: 10; background: rgba(247, 243, 235, .92); border-bottom: 1px solid var(--line); backdrop-filter: blur(10px); }
+.topbar { background: rgba(247, 243, 235, .92); border-bottom: 1px solid var(--line); backdrop-filter: blur(10px); }
 .topbar-inner { width: min(1120px, calc(100% - 32px)); margin: 0 auto; padding: 14px 0; display: flex; gap: 16px; align-items: center; justify-content: space-between; }
 .topbar .button, .topbar .icon-button { background: var(--bg); }
 .topbar .button:hover, .topbar .icon-button:hover { background: var(--surface); }
