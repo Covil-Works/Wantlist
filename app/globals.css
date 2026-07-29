@@ -38,7 +38,7 @@ button, input, textarea, select, a { -webkit-tap-highlight-color: transparent; }
 .site-footer a { color: inherit; font-weight: 650; text-underline-offset: 3px; }
 .site-footer a:hover { color: var(--ink); }
 .site-footer a:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 3px; border-radius: 2px; }
-.topbar { background: rgba(247, 243, 235, .92); border-bottom: 1px solid var(--line); backdrop-filter: blur(10px); }
+.topbar { position: relative; z-index: 30; background: rgba(247, 243, 235, .92); border-bottom: 1px solid var(--line); backdrop-filter: blur(10px); }
 .topbar-inner { width: min(1120px, calc(100% - 32px)); margin: 0 auto; padding: 14px 0; display: flex; gap: 16px; align-items: center; justify-content: space-between; }
 .topbar .button, .topbar .icon-button { background: var(--bg); }
 .topbar .button:hover, .topbar .icon-button:hover { background: var(--surface); }
@@ -184,6 +184,7 @@ button, input, textarea, select, a { -webkit-tap-highlight-color: transparent; }
 .share-copy-feedback { margin: 2px 10px 0; color: var(--success); font-size: 13px; font-weight: 700; }
 .nav-user-menu { width: min(184px, calc(100vw - 32px)); }
 .nav-guest-menu { width: min(220px, calc(100vw - 32px)); }
+.topbar .dropdown-menu { max-width: calc(100dvw - 32px); max-height: calc(100dvh - 88px); overflow-y: auto; overscroll-behavior: contain; }
 .menu-option { width: 100%; min-height: 38px; border: 0; border-radius: 8px; background: transparent; color: var(--ink); padding: 8px 10px; display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 10px; align-items: center; text-align: left; cursor: pointer; font-weight: 650; transition: background-color 150ms ease-out, color 150ms ease-out; }
 .menu-option:hover { background: var(--surface); }
 .menu-option:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 1px; }
