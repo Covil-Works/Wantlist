@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, ArrowUpRight, ChevronDown, Copy, Crown, Eye, EyeOff, Globe2, Home, MailPlus, Medal, MoreHorizontal, Plus, Search, Settings, Share2, SlidersHorizontal, Trash2, UserPlus, X } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, Copy, Eye, EyeOff, Globe2, Home, MailPlus, Medal, MoreHorizontal, Plus, Search, Settings, Share2, SlidersHorizontal, Trash2, UserPlus, X } from "lucide-react";
 import { api, ApiError } from "@/lib/client-api";
 import { useAuth } from "@/components/auth-provider";
 import { ItemForm } from "@/components/item-form";
@@ -227,6 +227,15 @@ export default function PublicWishlistPage() {
     return matchesStore && matchesStatus;
   });
   const orderedItems = [...filteredItems].sort((first: Item, second: Item) => {
+    const firstPodiumPosition = first.podium_position;
+    const secondPodiumPosition = second.podium_position;
+
+    if (firstPodiumPosition || secondPodiumPosition) {
+      if (!firstPodiumPosition) return 1;
+      if (!secondPodiumPosition) return -1;
+      return firstPodiumPosition - secondPodiumPosition;
+    }
+
     if (itemOrder === "name-asc" || itemOrder === "name-desc") {
       const comparison = first.name.localeCompare(second.name, "pt-BR", { sensitivity: "base", numeric: true });
       return itemOrder === "name-asc" ? comparison : -comparison;
@@ -235,14 +244,16 @@ export default function PublicWishlistPage() {
     const comparison = new Date(second.created_at).getTime() - new Date(first.created_at).getTime();
     return itemOrder === "newest" ? comparison : -comparison;
   });
-  const sortedItems = searchItems(orderedItems, searchQuery);
+  const sortedItems = searchItems(orderedItems, searchQuery).sort((first: Item, second: Item) => {
+    if (!first.podium_position && !second.podium_position) return 0;
+    if (!first.podium_position) return 1;
+    if (!second.podium_position) return -1;
+    return first.podium_position - second.podium_position;
+  });
   const availableItems = sortedItems.filter((item: Item) => !item.reserved);
   const reservedItems = sortedItems.filter((item: Item) => item.reserved);
-  const podiumItems = ([1, 2, 3] as const).map((position) => ({
-    position,
-    item: data.items.find((item: Item) => item.podium_position === position) as Item | undefined,
-  }));
-  const podiumItemCount = podiumItems.filter(({ item }) => item).length;
+  const podiumItemCount = data.items.filter((item: Item) => item.podium_position !== null).length;
+  const nextPodiumPosition = podiumItemCount < 3 ? (podiumItemCount + 1) as 1 | 2 | 3 : null;
 
   const activeControlCount = Number(itemView !== "grouped") + Number(itemOrder !== "newest") + Number(storeFilter !== "all");
   const emptyItemsMessage = searchQuery.trim() ? "Nenhum item corresponde à busca." : "Nenhum item corresponde aos filtros.";
@@ -264,16 +275,6 @@ export default function PublicWishlistPage() {
       document.querySelector<HTMLElement>(".item-form")?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
     }, 0);
   }
-  function openPodiumItem(id: string) {
-    setItemView("grouped");
-    setStoreFilter("all");
-    setSearchQuery("");
-    setExpandedItemId(id);
-    window.setTimeout(() => {
-      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      document.getElementById(`wishlist-item-${id}`)?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
-    }, 0);
-  }
   function renderItem(item: Item) {
     const expanded = expandedItemId === item.id;
     const hasDescription = Boolean(item.description);
@@ -288,7 +289,14 @@ export default function PublicWishlistPage() {
       >
         {item.image_url ? <Image className="item-row-image" src={item.image_url} alt="" width={88} height={88} unoptimized /> : <div className="item-row-image" />}
         <div className="item-row-copy">
-          <strong className="item-row-title" title={item.name}>{item.name}</strong>
+          <div className="item-row-title-line">
+            <strong className="item-row-title" title={item.name}>{item.name}</strong>
+            {item.podium_position && (
+              <span className={`podium-badge podium-badge-${item.podium_position}`} aria-label={`${item.podium_position}º lugar no pódio`}>
+                <Medal size={15} aria-hidden />{item.podium_position}º
+              </span>
+            )}
+          </div>
           {item.domain && <span className="muted">{item.domain}</span>}
           {expanded && <span className={`badge item-status ${item.reserved ? "reserved" : "available"} item-row-copy-status`}>{item.reserved_by_me ? "Seu" : item.reserved ? "Reservado" : "Disponível"}</span>}
         </div>
@@ -304,26 +312,22 @@ export default function PublicWishlistPage() {
           <div className="item-row-details" id={detailsId}>
             {hasDescription && <p>{item.description}</p>}
             {data.isOwner && (
-              <div className="podium-picker" aria-label={`Definir prioridade de ${item.name}`}>
-                <span>Prioridade</span>
-                <div className="podium-picker-actions">
-                  {([1, 2, 3] as const).map((position) => (
-                    <button
-                      className={`button compact${item.podium_position === position ? " podium-selected" : ""}`}
-                      type="button"
-                      aria-pressed={item.podium_position === position}
-                      onClick={() => setPodiumPosition(item.id, position)}
-                      key={position}
-                    >
-                      <Medal size={16} aria-hidden />Top {position}
-                    </button>
-                  ))}
-                  {item.podium_position && (
-                    <button className="button compact" type="button" onClick={() => setPodiumPosition(item.id, null)}>
-                      Remover do pódio
-                    </button>
-                  )}
-                </div>
+              <div className="podium-action">
+                {item.podium_position ? (
+                  <button className="button compact" type="button" onClick={() => setPodiumPosition(item.id, null)}>
+                    <Medal size={16} aria-hidden />Remover do pódio
+                  </button>
+                ) : (
+                  <button
+                    className="button compact"
+                    type="button"
+                    disabled={item.reserved || nextPodiumPosition === null}
+                    title={item.reserved ? "Apenas itens disponíveis podem entrar no pódio" : nextPodiumPosition === null ? "O pódio já está completo" : undefined}
+                    onClick={() => nextPodiumPosition && setPodiumPosition(item.id, nextPodiumPosition)}
+                  >
+                    <Medal size={16} aria-hidden />{nextPodiumPosition === null ? "Pódio completo" : "Adicionar ao pódio"}
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -405,54 +409,6 @@ export default function PublicWishlistPage() {
           <span>Wishlist de <strong>{data.wishlist.owner_name}</strong></span>
         </p>
       </header>
-
-      {podiumItemCount > 0 && (
-        <details className="podium">
-        <summary className="podium-summary">
-          <span className="podium-summary-icon"><Crown size={20} aria-hidden /></span>
-          <span className="podium-heading">
-            <strong>Mais desejados</strong>
-            <span className="muted">
-              {`${podiumItemCount} ${podiumItemCount === 1 ? "item em destaque" : "itens em destaque"}`}
-            </span>
-          </span>
-          <ChevronDown className="podium-chevron" size={20} aria-hidden />
-        </summary>
-        <div className="podium-content">
-          <p className="muted podium-intro">As três maiores prioridades desta lista.</p>
-          <div className="podium-list">
-            {podiumItems.map(({ position, item }) => (
-              <button
-                className={`podium-item podium-position-${position}${item ? "" : " empty"}`}
-                type="button"
-                disabled={!item}
-                onClick={() => item && openPodiumItem(item.id)}
-                aria-label={item ? `Abrir ${item.name} na lista` : `Top ${position} ainda não definido`}
-                key={position}
-              >
-                <span className="podium-rank" aria-label={`${position}º lugar`}>{position}</span>
-                {item ? (
-                  <>
-                    {item.image_url
-                      ? <Image className="podium-image" src={item.image_url} alt="" width={72} height={72} unoptimized />
-                      : <div className="podium-image podium-image-placeholder"><Medal size={24} aria-hidden /></div>}
-                    <div className="podium-copy">
-                      <strong title={item.name}>{item.name}</strong>
-                      {item.domain && <span className="muted">{item.domain}</span>}
-                    </div>
-                  </>
-                ) : (
-                  <div className="podium-empty-copy">
-                    <strong>Top {position}</strong>
-                    <span>{data.isOwner ? "Abra um item e escolha esta posição." : "Posição ainda não definida."}</span>
-                  </div>
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
-        </details>
-      )}
 
       {data.isOwner && showInviteModal && (
         <div className="modal-backdrop" role="presentation" onClick={() => setShowInviteModal(false)}>
