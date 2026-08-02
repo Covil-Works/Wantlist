@@ -20,21 +20,19 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         join wishlists w on w.id = i.wishlist_id
         where i.id = ${id} and w.owner_id = ${profile.id}
       ),
-      podium_state as (
-        select count(*)::int as item_count
-        from items
-        where wishlist_id = (select wishlist_id from selected_item)
-          and podium_position is not null
-      ),
       valid_change as (
         select selected_item.*
-        from selected_item, podium_state
+        from selected_item
         where ${position}::smallint is null
           or (
             not exists (select 1 from reservations r where r.item_id = selected_item.id)
             and selected_item.podium_position is null
-            and ${position}::smallint = podium_state.item_count + 1
-            and podium_state.item_count < 3
+            and not exists (
+              select 1
+              from items podium_item
+              where podium_item.wishlist_id = selected_item.wishlist_id
+                and podium_item.podium_position = ${position}::smallint
+            )
           )
       ),
       cleared_item as (
@@ -84,7 +82,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       }
 
       return NextResponse.json(
-        { error: "Apenas itens disponíveis podem entrar no próximo lugar livre do pódio." },
+        { error: "Apenas itens disponíveis podem entrar em um lugar livre do pódio." },
         { status: 400 },
       );
     }

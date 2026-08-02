@@ -352,8 +352,8 @@ export default function PublicWishlistPage() {
   });
   const availableItems = sortedItems.filter((item: Item) => !item.reserved);
   const reservedItems = sortedItems.filter((item: Item) => item.reserved);
-  const podiumItemCount = data.items.filter((item: Item) => item.podium_position !== null).length;
-  const nextPodiumPosition = podiumItemCount < 3 ? (podiumItemCount + 1) as 1 | 2 | 3 : null;
+  const occupiedPodiumPositions = new Set(data.items.map((item: Item) => item.podium_position).filter(Boolean));
+  const nextPodiumPosition = ([1, 2, 3] as const).find((position) => !occupiedPodiumPositions.has(position)) ?? null;
 
   const activeControlCount = Number(itemView !== "grouped") + Number(itemOrder !== "newest") + Number(storeFilter !== "all");
   const emptyItemsMessage = searchQuery.trim() ? "Nenhum item corresponde à busca." : "Nenhum item corresponde aos filtros.";
