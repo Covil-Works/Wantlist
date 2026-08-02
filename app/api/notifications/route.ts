@@ -20,11 +20,15 @@ function presentNotification(row: NotificationRow) {
     podium_item_reserved: `Alguém reservou um item do pódio da sua lista ${row.title}. Você pode substituí-lo por outro item.`,
   };
 
+  const itemTarget = row.item_id
+    ? `${row.type === "new_items" ? `?novo=${row.item_id}` : ""}#wishlist-item-${row.item_id}`
+    : "";
+
   return {
     id: row.id,
     type: row.type,
     message: messages[row.type],
-    href: `/w/${row.public_code}${row.item_id ? `#wishlist-item-${row.item_id}` : ""}`,
+    href: `/w/${row.public_code}${itemTarget}`,
     created_at: row.created_at,
     read_at: row.read_at,
   };
@@ -36,7 +40,13 @@ export async function GET(request: Request) {
   const limit = requestedLimit ? Math.min(Math.max(Number.parseInt(requestedLimit, 10) || 3, 1), 50) : null;
   const rows = limit
     ? await sql`
-        select n.id, n.type, n.created_at, n.read_at, n.item_id, w.title, w.public_code
+        select n.id, n.type, n.created_at, n.read_at,
+          coalesce(n.item_id, (
+            select i.id from items i
+            where n.type = 'new_items' and i.wishlist_id = n.wishlist_id and i.created_at <= n.created_at
+            order by i.created_at desc limit 1
+          )) as item_id,
+          w.title, w.public_code
         from notifications n
         join wishlists w on w.id = n.wishlist_id
         where n.recipient_id = ${profile.id}
@@ -44,7 +54,13 @@ export async function GET(request: Request) {
         limit ${limit}
       `
     : await sql`
-        select n.id, n.type, n.created_at, n.read_at, n.item_id, w.title, w.public_code
+        select n.id, n.type, n.created_at, n.read_at,
+          coalesce(n.item_id, (
+            select i.id from items i
+            where n.type = 'new_items' and i.wishlist_id = n.wishlist_id and i.created_at <= n.created_at
+            order by i.created_at desc limit 1
+          )) as item_id,
+          w.title, w.public_code
         from notifications n
         join wishlists w on w.id = n.wishlist_id
         where n.recipient_id = ${profile.id}

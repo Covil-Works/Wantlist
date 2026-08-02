@@ -117,6 +117,7 @@ export default function PublicWishlistPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const pendingAction = searchParams.get("action");
+  const highlightedNewItemId = searchParams.get("novo");
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState<{ status?: number } | null>(null);
   const [showItemForm, setShowItemForm] = useState(false);
@@ -385,10 +386,11 @@ export default function PublicWishlistPage() {
     const hasDescription = Boolean(item.description);
     const hasExpandedDetails = hasDescription || expanded;
     const detailsId = `item-details-${item.id}`;
+    const isNew = item.is_new || item.id === highlightedNewItemId;
 
     return (
       <article
-        className={`item-row${expanded ? " expanded" : ""}${item.is_new ? " new" : ""}`}
+        className={`item-row${expanded ? " expanded" : ""}${isNew ? " new" : ""}`}
         id={`wishlist-item-${item.id}`}
         key={item.id}
       >
