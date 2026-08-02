@@ -7,12 +7,31 @@ import type { Wishlist } from "@/lib/types";
 export async function POST(_: Request, { params }: { params: Promise<{ id: string }> }) {
   const profile = await requireProfile();
   const { id } = await params;
-  const rows = await sql`select w.* from items i join wishlists w on w.id = i.wishlist_id where i.id = ${id} limit 1`;
+  const rows = await sql`
+    select w.*, i.podium_position
+    from items i
+    join wishlists w on w.id = i.wishlist_id
+    where i.id = ${id}
+    limit 1
+  `;
   const wishlist = rows[0] as Wishlist | undefined;
   if (!wishlist || !(await canViewWishlist(wishlist, profile))) return NextResponse.json({ error: "Sem acesso." }, { status: 403 });
   if (wishlist.owner_id === profile.id) return NextResponse.json({ error: "O dono não pode reservar a própria wishlist." }, { status: 403 });
   try {
-    await sql`insert into reservations (item_id, user_id) values (${id}, ${profile.id})`;
+    await sql`
+      with new_reservation as (
+        insert into reservations (item_id, user_id)
+        values (${id}, ${profile.id})
+        returning item_id
+      )
+      insert into notifications (recipient_id, wishlist_id, item_id, type)
+      select ${wishlist.owner_id}, ${wishlist.id}, new_reservation.item_id,
+        (case when ${rows[0].podium_position}::smallint is null
+          then 'item_reserved'
+          else 'podium_item_reserved'
+        end)::notification_type
+      from new_reservation
+    `;
     return NextResponse.json({ ok: true });
   } catch {
     return NextResponse.json({ error: "Item já reservado." }, { status: 409 });

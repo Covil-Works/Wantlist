@@ -16,15 +16,24 @@ export async function GET(_: Request, { params }: { params: Promise<{ code: stri
   if (!wishlist || !(await canViewWishlist(wishlist, profile))) {
     return NextResponse.json({ error: "Conteúdo indisponível." }, { status: 404 });
   }
+  const followState = profile
+    ? await sql`
+        select last_viewed_at
+        from followers
+        where user_id = ${profile.id} and wishlist_id = ${wishlist.id}
+        limit 1
+      `
+    : [];
+  const lastViewedAt = followState[0]?.last_viewed_at || null;
   const items = await sql`
     select i.*,
       (r.item_id is not null) as reserved,
-      (${profile?.id || null}::uuid is not null and r.user_id = ${profile?.id || null}) as reserved_by_me
+      (${profile?.id || null}::uuid is not null and r.user_id = ${profile?.id || null}) as reserved_by_me,
+      (${lastViewedAt}::timestamptz is not null and i.created_at > ${lastViewedAt}::timestamptz) as is_new
     from items i
     left join reservations r on r.item_id = i.id
     where i.wishlist_id = ${wishlist.id}
     order by i.created_at desc
   `;
-  const following = profile ? await sql`select 1 from followers where user_id = ${profile.id} and wishlist_id = ${wishlist.id}` : [];
-  return NextResponse.json({ wishlist, items, viewer: profile, isOwner: profile?.id === wishlist.owner_id, following: following.length > 0 });
+  return NextResponse.json({ wishlist, items, viewer: profile, isOwner: profile?.id === wishlist.owner_id, following: followState.length > 0 });
 }

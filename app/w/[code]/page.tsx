@@ -147,7 +147,12 @@ export default function PublicWishlistPage() {
   async function load() {
     setError(null);
     setData(null);
-    try { setData(await api(`/api/wishlist/${code}`)); }
+    try {
+      const nextData = await api(`/api/wishlist/${code}`);
+      setData(nextData);
+      if (nextData.following) await api(`/api/follow/${code}`, { method: "PATCH" });
+      window.dispatchEvent(new Event("notifications:refresh"));
+    }
     catch (loadError) {
       setError(loadError instanceof ApiError ? { status: loadError.status } : {});
     }
@@ -383,7 +388,7 @@ export default function PublicWishlistPage() {
 
     return (
       <article
-        className={`item-row${expanded ? " expanded" : ""}`}
+        className={`item-row${expanded ? " expanded" : ""}${item.is_new ? " new" : ""}`}
         id={`wishlist-item-${item.id}`}
         key={item.id}
       >
@@ -391,6 +396,7 @@ export default function PublicWishlistPage() {
         <div className="item-row-copy">
           <div className="item-row-title-line">
             <strong className="item-row-title" title={item.name}>{item.name}</strong>
+            {item.is_new && <span className="badge item-new-badge">Novo</span>}
             {item.podium_position && (
               <span className={`podium-badge podium-badge-${item.podium_position}`} aria-label={`${item.podium_position}º lugar no pódio`}>
                 <Medal size={15} aria-hidden />{item.podium_position}º
@@ -459,7 +465,7 @@ export default function PublicWishlistPage() {
               <div className="menu-wrap">
                 <button className="icon-button" title="Compartilhar" aria-label="Compartilhar" aria-expanded={showShareMenu} aria-controls="share-menu" onClick={toggleShareMenu}><Share2 size={18} aria-hidden /></button>
                 {showShareMenu && (
-                  <div className="dropdown-menu share-menu wishlist-topbar-menu" id="share-menu" role="menu">
+                  <div className="dropdown-menu share-menu wishlist-topbar-menu dropdown-menu-viewport-centered" id="share-menu" role="menu">
                     <strong>Compartilhar wishlist</strong>
                     <div className="share-link-plain">{shareUrl}</div>
                     <button className="menu-option" onClick={copyShareLink} role="menuitem">
@@ -477,7 +483,7 @@ export default function PublicWishlistPage() {
               <div className="menu-wrap">
                 <button className="icon-button" title="Alterar visibilidade" aria-label="Alterar visibilidade" aria-expanded={showVisibilityMenu} onClick={() => { setShowVisibilityMenu((value) => !value); setShowShareMenu(false); }}><Eye size={18} aria-hidden /></button>
                 {showVisibilityMenu && (
-                  <div className="dropdown-menu visibility-menu wishlist-topbar-menu" role="menu">
+                  <div className="dropdown-menu visibility-menu wishlist-topbar-menu dropdown-menu-viewport-centered" role="menu">
                     <strong>Escolha a visibilidade da lista</strong>
                     {visibilityOptions.map((option) => {
                       const Icon = option.icon;
@@ -565,7 +571,7 @@ export default function PublicWishlistPage() {
                       <SlidersHorizontal size={18} aria-hidden />
                     </button>
                     {showListControls && (
-                      <div className="dropdown-menu wishlist-list-controls" id="wishlist-list-controls" role="dialog" aria-label="Filtrar e ordenar itens">
+                      <div className="dropdown-menu wishlist-list-controls dropdown-menu-viewport-centered" id="wishlist-list-controls" role="dialog" aria-label="Filtrar e ordenar itens">
                         <label className="field">
                           <span>Ordenar por</span>
                           <select className="select" value={itemOrder} onChange={(event) => setItemOrder(event.target.value as ItemOrder)}>

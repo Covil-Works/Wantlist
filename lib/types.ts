@@ -33,4 +33,16 @@ export type Item = {
   updated_at: string;
   reserved: boolean;
   reserved_by_me?: boolean;
+  is_new?: boolean;
+};
+
+export type NotificationType = "new_items" | "item_reserved" | "podium_item_reserved";
+
+export type Notification = {
+  id: string;
+  type: NotificationType;
+  message: string;
+  href: string;
+  created_at: string;
+  read_at: string | null;
 };

@@ -5,6 +5,7 @@ import Link from "next/link";
 import "./globals.css";
 import { AuthProvider } from "@/components/auth-provider";
 import { UserNav } from "@/components/user-nav";
+import { NotificationMenu } from "@/components/notification-menu";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -30,7 +31,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   <Image src="/logo-wl.png" alt="" width={74} height={54} priority />
                   <span className="sr-only">Wantlist</span>
                 </Link>
-                <UserNav />
+                <div className="topbar-actions">
+                  <NotificationMenu />
+                  <UserNav />
+                </div>
               </div>
             </header>
             {children}

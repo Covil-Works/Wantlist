@@ -15,6 +15,46 @@ export async function POST(_: Request, { params }: { params: Promise<{ code: str
 export async function DELETE(_: Request, { params }: { params: Promise<{ code: string }> }) {
   const profile = await requireProfile();
   const { code } = await params;
-  await sql`delete from followers f using wishlists w where f.wishlist_id = w.id and w.public_code = ${code} and f.user_id = ${profile.id}`;
+  await sql`
+    with unfollowed as (
+      delete from followers f
+      using wishlists w
+      where f.wishlist_id = w.id
+        and w.public_code = ${code}
+        and f.user_id = ${profile.id}
+      returning f.wishlist_id
+    )
+    update notifications n
+    set read_at = coalesce(n.read_at, now())
+    from unfollowed
+    where n.recipient_id = ${profile.id}
+      and n.wishlist_id = unfollowed.wishlist_id
+      and n.type = 'new_items'
+      and n.read_at is null
+  `;
+  return NextResponse.json({ ok: true });
+}
+
+export async function PATCH(_: Request, { params }: { params: Promise<{ code: string }> }) {
+  const profile = await requireProfile();
+  const { code } = await params;
+  await sql`
+    with viewed_wishlist as (
+      update followers f
+      set last_viewed_at = now()
+      from wishlists w
+      where f.wishlist_id = w.id
+        and w.public_code = ${code}
+        and f.user_id = ${profile.id}
+      returning f.wishlist_id
+    )
+    update notifications n
+    set read_at = coalesce(n.read_at, now())
+    from viewed_wishlist
+    where n.recipient_id = ${profile.id}
+      and n.wishlist_id = viewed_wishlist.wishlist_id
+      and n.type = 'new_items'
+      and n.read_at is null
+  `;
   return NextResponse.json({ ok: true });
 }
