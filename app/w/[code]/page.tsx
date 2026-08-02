@@ -137,6 +137,7 @@ export default function PublicWishlistPage() {
   const [itemOrder, setItemOrder] = useState<ItemOrder>("newest");
   const [storeFilter, setStoreFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [viewedNewItemIds, setViewedNewItemIds] = useState<Set<string>>(new Set());
   const shareMenuRef = useRef<HTMLDivElement>(null);
   const listControlsRef = useRef<HTMLDivElement>(null);
   const pendingActionHandledRef = useRef(false);
@@ -229,6 +230,9 @@ export default function PublicWishlistPage() {
   }
 
   function toggleItem(id: string) {
+    if (expandedItemId !== id) {
+      setViewedNewItemIds((current) => new Set(current).add(id));
+    }
     setExpandedItemId((current) => current === id ? null : id);
   }
 
@@ -386,7 +390,7 @@ export default function PublicWishlistPage() {
     const hasDescription = Boolean(item.description);
     const hasExpandedDetails = hasDescription || expanded;
     const detailsId = `item-details-${item.id}`;
-    const isNew = item.is_new || item.id === highlightedNewItemId;
+    const isNew = !viewedNewItemIds.has(item.id) && (item.is_new || item.id === highlightedNewItemId);
 
     return (
       <article

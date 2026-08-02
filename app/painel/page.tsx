@@ -21,6 +21,7 @@ type FollowedWishlist = {
   owner_name: string;
   access_type: string;
   item_count: number;
+  new_item_count: number;
 };
 
 type Dashboard = {
@@ -134,6 +135,11 @@ export default function DashboardPage() {
                 <div className="dashboard-following-list">
                   {data.following.map((w) => (
                     <Link className="dashboard-following-row" href={`/w/${w.public_code}`} key={w.public_code}>
+                      {w.new_item_count > 0 && (
+                        <span className="dashboard-new-items-badge">
+                          {w.new_item_count} {w.new_item_count === 1 ? "item novo" : "itens novos"}
+                        </span>
+                      )}
                       <span className="dashboard-following-main">
                         <strong>{w.title}</strong>
                         <span className="muted">De {w.owner_name} - {w.item_count} {w.item_count === 1 ? "item" : "itens"}</span>
