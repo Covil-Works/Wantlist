@@ -4,7 +4,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, ArrowUpRight, Copy, Eye, EyeOff, Globe2, Home, MailPlus, Medal, MoreHorizontal, Plus, Search, Settings, Share2, SlidersHorizontal, Trash2, UserPlus, X } from "lucide-react";
+import { closestCenter, DndContext, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { ArrowLeft, ArrowUpRight, CircleMinus, Copy, Eye, EyeOff, Globe2, GripVertical, Home, MailPlus, Medal, MoreHorizontal, Pencil, Plus, Search, Settings, Share2, SlidersHorizontal, Trash2, UserPlus, X } from "lucide-react";
 import { api, ApiError } from "@/lib/client-api";
 import { useAuth } from "@/components/auth-provider";
 import { ItemForm } from "@/components/item-form";
@@ -22,6 +25,52 @@ const visibilityOptions = [
 
 function visibilityLabel(value: string) {
   return visibilityOptions.find((option) => option.value === value)?.label || value;
+}
+
+function SortablePodiumItem({ item, position, onRemove }: { item: Item; position: 1 | 2 | 3; onRemove: (id: string) => void }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
+
+  return (
+    <article
+      className={`item-row podium-edit-item${isDragging ? " dragging" : ""}`}
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition }}
+    >
+      {item.image_url
+        ? <Image className="item-row-image" src={item.image_url} alt="" width={88} height={88} unoptimized />
+        : <div className="item-row-image" />}
+      <div className="item-row-copy">
+        <div className="item-row-title-line">
+          <strong className="item-row-title" title={item.name}>{item.name}</strong>
+          <span className={`podium-badge podium-badge-${position}`} aria-label={`${position}º lugar no pódio`}>
+            <Medal size={15} aria-hidden />{position}º
+          </span>
+        </div>
+        {item.domain && <span className="muted">{item.domain}</span>}
+      </div>
+      <div className="podium-edit-item-actions">
+        <button
+          className="icon-button danger"
+          type="button"
+          title="Remover do pódio"
+          aria-label={`Remover ${item.name} do pódio`}
+          onClick={() => onRemove(item.id)}
+        >
+          <CircleMinus size={19} aria-hidden />
+        </button>
+        <button
+          className="icon-button podium-drag-handle"
+          type="button"
+          title={`Arrastar ${item.name}`}
+          aria-label={`Arrastar ${item.name} para outra posição`}
+          {...attributes}
+          {...listeners}
+        >
+          <GripVertical size={20} aria-hidden />
+        </button>
+      </div>
+    </article>
+  );
 }
 
 function ContentNotFound() {
@@ -80,6 +129,9 @@ export default function PublicWishlistPage() {
   const [showSearch, setShowSearch] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
+  const [isEditingPodium, setIsEditingPodium] = useState(false);
+  const [isSavingPodium, setIsSavingPodium] = useState(false);
+  const [podiumDraft, setPodiumDraft] = useState<Item[]>([]);
   const [itemView, setItemView] = useState<ItemView>("grouped");
   const [itemOrder, setItemOrder] = useState<ItemOrder>("newest");
   const [storeFilter, setStoreFilter] = useState("all");
@@ -87,6 +139,10 @@ export default function PublicWishlistPage() {
   const shareMenuRef = useRef<HTMLDivElement>(null);
   const listControlsRef = useRef<HTMLDivElement>(null);
   const pendingActionHandledRef = useRef(false);
+  const podiumSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
 
   async function load() {
     setError(null);
@@ -206,6 +262,50 @@ export default function PublicWishlistPage() {
   async function setPodiumPosition(id: string, position: 1 | 2 | 3 | null) {
     await api(`/api/items/${id}/podium`, { method: "PATCH", body: JSON.stringify({ position }) });
     await load();
+  }
+
+  function startPodiumEditing() {
+    const items = data.items
+      .filter((item: Item) => item.podium_position && !item.reserved)
+      .sort((first: Item, second: Item) => (first.podium_position || 0) - (second.podium_position || 0));
+
+    setItemView("grouped");
+    setStoreFilter("all");
+    setSearchQuery("");
+    setShowSearch(false);
+    setPodiumDraft(items);
+    setIsEditingPodium(true);
+  }
+
+  function cancelPodiumEditing() {
+    setPodiumDraft([]);
+    setIsEditingPodium(false);
+  }
+
+  function handlePodiumDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    setPodiumDraft((items) => {
+      const previousIndex = items.findIndex((item) => item.id === active.id);
+      const nextIndex = items.findIndex((item) => item.id === over.id);
+      return arrayMove(items, previousIndex, nextIndex);
+    });
+  }
+
+  async function savePodiumOrder() {
+    setIsSavingPodium(true);
+    try {
+      await api(`/api/wishlist/${code}/podium`, {
+        method: "PATCH",
+        body: JSON.stringify({ itemIds: podiumDraft.map((item) => item.id) }),
+      });
+      setIsEditingPodium(false);
+      setPodiumDraft([]);
+      await load();
+    } finally {
+      setIsSavingPodium(false);
+    }
   }
   async function remove(id: string) {
     if (confirm("Excluir este item definitivamente?")) {
@@ -517,21 +617,68 @@ export default function PublicWishlistPage() {
                 </div>
               )}
             </div>
-            {itemSections.map((section) => (
-              <section className="wishlist-item-group" aria-label={section.id === "available-items" ? "Itens disponíveis" : undefined} aria-labelledby={section.id !== "available-items" ? `${section.id}-title` : undefined} key={section.id}>
-                {section.id !== "available-items" && (
-                  <div className="wishlist-item-group-heading">
-                    <h2 id={`${section.id}-title`}>{section.title}</h2>
-                    <span>{section.items.length}</span>
+            {itemSections.map((section) => {
+              const sectionPodiumItems = section.items.filter((item: Item) => item.podium_position && !item.reserved);
+              const sectionRegularItems = section.items.filter((item: Item) => !item.podium_position || item.reserved);
+              const editingThisPodium = isEditingPodium && section.id === "available-items";
+              const displayedPodiumItems = editingThisPodium ? podiumDraft : sectionPodiumItems;
+
+              return (
+                <section className="wishlist-item-group" aria-label={section.id === "available-items" ? "Itens disponíveis" : undefined} aria-labelledby={section.id !== "available-items" ? `${section.id}-title` : undefined} key={section.id}>
+                  {section.id !== "available-items" && (
+                    <div className="wishlist-item-group-heading">
+                      <h2 id={`${section.id}-title`}>{section.title}</h2>
+                      <span>{section.items.length}</span>
+                    </div>
+                  )}
+                  <div className="wishlist-item-group-list">
+                    {(displayedPodiumItems.length > 0 || editingThisPodium) && (
+                      <section className={`podium-group${editingThisPodium ? " editing" : ""}`} aria-labelledby={`${section.id}-podium-title`}>
+                        <div className="podium-group-heading">
+                          <h2 id={`${section.id}-podium-title`}>Mais desejados</h2>
+                          {data.isOwner && !editingThisPodium && (
+                            <button className="icon-button podium-edit-button" type="button" title="Editar pódio" aria-label="Editar pódio" onClick={startPodiumEditing}>
+                              <Pencil size={17} aria-hidden />
+                            </button>
+                          )}
+                        </div>
+                        {editingThisPodium ? (
+                          <>
+                            <DndContext sensors={podiumSensors} collisionDetection={closestCenter} onDragEnd={handlePodiumDragEnd}>
+                              <SortableContext items={podiumDraft.map((item) => item.id)} strategy={verticalListSortingStrategy}>
+                                <div className="podium-group-items">
+                                  {podiumDraft.map((item, index) => (
+                                    <SortablePodiumItem
+                                      item={item}
+                                      position={(index + 1) as 1 | 2 | 3}
+                                      onRemove={(id) => setPodiumDraft((items) => items.filter((draftItem) => draftItem.id !== id))}
+                                      key={item.id}
+                                    />
+                                  ))}
+                                </div>
+                              </SortableContext>
+                            </DndContext>
+                            <div className="podium-edit-footer">
+                              <button className="button primary compact" type="button" disabled={isSavingPodium} onClick={savePodiumOrder}>
+                                {isSavingPodium ? "Salvando..." : "Salvar"}
+                              </button>
+                              <button className="button compact" type="button" disabled={isSavingPodium} onClick={cancelPodiumEditing}>Cancelar</button>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="podium-group-items">
+                            {displayedPodiumItems.map(renderItem)}
+                          </div>
+                        )}
+                      </section>
+                    )}
+                    {sectionRegularItems.length > 0
+                      ? sectionRegularItems.map(renderItem)
+                      : displayedPodiumItems.length === 0 && !editingThisPodium && <p className="wishlist-item-group-empty">{emptyItemsMessage}</p>}
                   </div>
-                )}
-                <div className="wishlist-item-group-list">
-                  {section.items.length > 0
-                    ? section.items.map(renderItem)
-                    : <p className="wishlist-item-group-empty">{emptyItemsMessage}</p>}
-                </div>
-              </section>
-            ))}
+                </section>
+              );
+            })}
           </>
         )}
       </section>
