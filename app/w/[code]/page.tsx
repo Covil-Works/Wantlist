@@ -394,11 +394,11 @@ export default function PublicWishlistPage() {
         id={`wishlist-item-${item.id}`}
         key={item.id}
       >
+        {isNew && <span className="badge item-new-badge">NOVO</span>}
         {item.image_url ? <Image className="item-row-image" src={item.image_url} alt="" width={88} height={88} unoptimized /> : <div className="item-row-image" />}
         <div className="item-row-copy">
           <div className="item-row-title-line">
             <strong className="item-row-title" title={item.name}>{item.name}</strong>
-            {item.is_new && <span className="badge item-new-badge">Novo</span>}
             {item.podium_position && (
               <span className={`podium-badge podium-badge-${item.podium_position}`} aria-label={`${item.podium_position}º lugar no pódio`}>
                 <Medal size={15} aria-hidden />{item.podium_position}º
