@@ -250,10 +250,11 @@ button, input, textarea, select, a { -webkit-tap-highlight-color: transparent; }
 .dashboard-section-heading p { margin: 0; }
 .dashboard-section-heading > svg { color: var(--primary); flex: 0 0 auto; }
 .dashboard-following-list { display: grid; gap: 8px; }
-.dashboard-following-row { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto 18px; gap: 12px; align-items: center; min-height: 68px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); padding: 12px 14px; transition: background-color 150ms ease-out, border-color 150ms ease-out, transform 150ms ease-out; }
+.dashboard-following-row { display: grid; grid-template-columns: minmax(0, 1fr) auto 18px; gap: 12px; align-items: center; min-height: 68px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); padding: 12px 14px; transition: background-color 150ms ease-out, border-color 150ms ease-out, transform 150ms ease-out; }
+.dashboard-following-row.has-new-items { grid-template-columns: minmax(0, 1fr) auto 18px 24px; }
 .dashboard-following-row:hover { background: var(--surface); border-color: var(--primary); transform: translateY(-1px); }
 .dashboard-following-row > svg { color: var(--primary); }
-.dashboard-new-items-badge { position: absolute; top: -9px; left: 14px; border-radius: 999px; background: var(--danger); color: var(--bg); padding: 3px 8px; font-size: 11px; font-weight: 800; line-height: 1.2; }
+.dashboard-new-items-badge { width: 24px; height: 24px; border-radius: 999px; background: var(--danger); }
 .dashboard-following-main { display: grid; gap: 3px; min-width: 0; }
 .dashboard-following-main strong, .dashboard-following-main span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dashboard-empty-following { background: #FBF4D5; }
@@ -323,6 +324,7 @@ button, input, textarea, select, a { -webkit-tap-highlight-color: transparent; }
   .dashboard-actions { justify-content: stretch; }
   .dashboard-actions .button { flex: 1 1 100%; }
   .dashboard-following-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .dashboard-following-row.has-new-items { grid-template-columns: minmax(0, 1fr) auto 24px; }
   .dashboard-following-row > svg { display: none; }
 }
 .showcase { position: relative; height: 430px; overflow: hidden; border-radius: 12px; background: var(--surface); }
