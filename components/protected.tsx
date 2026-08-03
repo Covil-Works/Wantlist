@@ -5,6 +5,9 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { api } from "@/lib/client-api";
 
+const verifiedProfiles = new Set<string>();
+const profileChecks = new Map<string, Promise<boolean>>();
+
 function currentPath() {
   if (typeof window === "undefined") return "/";
   return `${window.location.pathname}${window.location.search}`;
@@ -12,7 +15,7 @@ function currentPath() {
 
 export function Protected({ children, requireProfile = true }: { children: React.ReactNode; requireProfile?: boolean }) {
   const { user, loading } = useAuth();
-  const [checkingProfile, setCheckingProfile] = useState(requireProfile);
+  const [checkingProfile, setCheckingProfile] = useState(() => requireProfile && (!user || !verifiedProfiles.has(user.uid)));
   const router = useRouter();
 
   useEffect(() => {
@@ -25,13 +28,27 @@ export function Protected({ children, requireProfile = true }: { children: React
       setCheckingProfile(false);
       return;
     }
+    if (verifiedProfiles.has(user.uid)) {
+      setCheckingProfile(false);
+      return;
+    }
 
     let active = true;
     setCheckingProfile(true);
-    api("/api/profile")
-      .then(({ profile }) => {
+    let check = profileChecks.get(user.uid);
+    if (!check) {
+      check = api("/api/profile")
+        .then(({ profile }) => {
+          if (profile) verifiedProfiles.add(user.uid);
+          return Boolean(profile);
+        })
+        .finally(() => profileChecks.delete(user.uid));
+      profileChecks.set(user.uid, check);
+    }
+    check
+      .then((hasProfile) => {
         if (!active) return;
-        if (!profile) {
+        if (!hasProfile) {
           router.replace(`/onboarding?next=${encodeURIComponent(currentPath())}`);
           return;
         }
