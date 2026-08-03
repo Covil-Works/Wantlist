@@ -15,29 +15,79 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     const rows = await sql`
       with selected_item as (
-        select i.id, i.wishlist_id
+        select i.id, i.wishlist_id, i.podium_position
         from items i
         join wishlists w on w.id = i.wishlist_id
         where i.id = ${id} and w.owner_id = ${profile.id}
       ),
-      cleared_position as (
+      valid_change as (
+        select selected_item.*
+        from selected_item
+        where ${position}::smallint is null
+          or (
+            not exists (select 1 from reservations r where r.item_id = selected_item.id)
+            and selected_item.podium_position is null
+            and not exists (
+              select 1
+              from items podium_item
+              where podium_item.wishlist_id = selected_item.wishlist_id
+                and podium_item.podium_position = ${position}::smallint
+            )
+          )
+      ),
+      cleared_item as (
         update items
         set podium_position = null, updated_at = now()
-        where wishlist_id = (select wishlist_id from selected_item)
-          and podium_position = ${position}
-          and id <> ${id}
+        where id = (select id from valid_change)
+          and ${position}::smallint is null
+        returning id, wishlist_id, (select podium_position from valid_change) as previous_position
+      ),
+      shifted_second as (
+        update items
+        set podium_position = podium_position - 1, updated_at = now()
+        where wishlist_id = (select wishlist_id from cleared_item)
+          and podium_position = (select previous_position + 1 from cleared_item)
+        returning wishlist_id
+      ),
+      shifted_third as (
+        update items
+        set podium_position = podium_position - 1, updated_at = now()
+        where wishlist_id = (select wishlist_id from shifted_second)
+          and podium_position = (select previous_position + 2 from cleared_item)
+        returning wishlist_id
+      ),
+      assigned_item as (
+        update items
+        set podium_position = ${position}, updated_at = now()
+        where id = (select id from valid_change)
+          and ${position}::smallint is not null
+        returning id
       )
-      update items
-      set podium_position = ${position}, updated_at = now()
-      where id = (select id from selected_item)
-      returning *
+      select id from assigned_item
+      union all
+      select id from cleared_item
+      limit 1
     `;
 
     if (!rows[0]) {
-      return NextResponse.json({ error: "Item não encontrado ou sem permissão." }, { status: 404 });
+      const itemExists = await sql`
+        select 1
+        from items i
+        join wishlists w on w.id = i.wishlist_id
+        where i.id = ${id} and w.owner_id = ${profile.id}
+      `;
+
+      if (!itemExists[0]) {
+        return NextResponse.json({ error: "Item não encontrado ou sem permissão." }, { status: 404 });
+      }
+
+      return NextResponse.json(
+        { error: "Apenas itens disponíveis podem entrar em um lugar livre do pódio." },
+        { status: 400 },
+      );
     }
 
-    return NextResponse.json({ item: rows[0] });
+    return NextResponse.json({ ok: true });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Não foi possível atualizar o pódio." },

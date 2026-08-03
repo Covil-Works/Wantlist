@@ -12,6 +12,10 @@ do $$ begin
   create type guest_access_status as enum ('active', 'removed');
 exception when duplicate_object then null; end $$;
 
+do $$ begin
+  create type notification_type as enum ('new_items', 'item_reserved', 'podium_item_reserved');
+exception when duplicate_object then null; end $$;
+
 create table if not exists profiles (
   id uuid primary key default gen_random_uuid(),
   firebase_uid text not null unique,
@@ -28,6 +32,7 @@ create table if not exists wishlists (
   title varchar(100) not null,
   public_code varchar(24) not null unique,
   visibility wishlist_visibility not null,
+  items_revision bigint not null default 0,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique(owner_id)
@@ -42,6 +47,7 @@ create table if not exists items (
   original_url varchar(1000),
   domain varchar(180),
   podium_position smallint,
+  created_revision bigint not null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   constraint items_podium_position_check check (podium_position between 1 and 3)
@@ -50,6 +56,8 @@ create table if not exists items (
 alter table items alter column original_url drop not null;
 alter table items alter column domain drop not null;
 alter table items add column if not exists podium_position smallint;
+alter table wishlists add column if not exists items_revision bigint not null default 0;
+alter table items add column if not exists created_revision bigint;
 
 do $$ begin
   alter table items add constraint items_podium_position_check check (podium_position between 1 and 3);
@@ -59,10 +67,24 @@ create unique index if not exists items_wishlist_podium_position_unique
   on items (wishlist_id, podium_position)
   where podium_position is not null;
 
+create unique index if not exists items_wishlist_created_revision_unique
+  on items (wishlist_id, created_revision);
+
 create table if not exists followers (
   user_id uuid not null references profiles(id) on delete cascade,
   wishlist_id uuid not null references wishlists(id) on delete cascade,
   created_at timestamptz not null default now(),
+  last_viewed_at timestamptz not null default now(),
+  primary key (user_id, wishlist_id)
+);
+
+alter table followers add column if not exists last_viewed_at timestamptz not null default now();
+
+create table if not exists wishlist_views (
+  user_id uuid not null references profiles(id) on delete cascade,
+  wishlist_id uuid not null references wishlists(id) on delete cascade,
+  last_viewed_revision bigint not null default 0,
+  updated_at timestamptz not null default now(),
   primary key (user_id, wishlist_id)
 );
 
@@ -90,3 +112,27 @@ create table if not exists reservations (
   user_id uuid not null references profiles(id) on delete cascade,
   created_at timestamptz not null default now()
 );
+
+create table if not exists notifications (
+  id uuid primary key default gen_random_uuid(),
+  recipient_id uuid not null references profiles(id) on delete cascade,
+  wishlist_id uuid not null references wishlists(id) on delete cascade,
+  item_id uuid references items(id) on delete set null,
+  item_revision bigint,
+  type notification_type not null,
+  created_at timestamptz not null default now(),
+  read_at timestamptz
+);
+
+alter table notifications add column if not exists item_revision bigint;
+
+create index if not exists notifications_recipient_created_at_idx
+  on notifications (recipient_id, created_at desc);
+
+create index if not exists notifications_recipient_unread_idx
+  on notifications (recipient_id, created_at desc)
+  where read_at is null;
+
+create unique index if not exists notifications_unread_new_items_unique
+  on notifications (recipient_id, wishlist_id, type)
+  where read_at is null and type = 'new_items';

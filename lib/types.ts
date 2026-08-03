@@ -29,8 +29,21 @@ export type Item = {
   original_url: string | null;
   domain: string | null;
   podium_position: 1 | 2 | 3 | null;
+  created_revision: number;
   created_at: string;
   updated_at: string;
   reserved: boolean;
   reserved_by_me?: boolean;
+  is_new?: boolean;
+};
+
+export type NotificationType = "new_items" | "item_reserved" | "podium_item_reserved";
+
+export type Notification = {
+  id: string;
+  type: NotificationType;
+  message: string;
+  href: string;
+  created_at: string;
+  read_at: string | null;
 };

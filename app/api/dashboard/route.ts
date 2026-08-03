@@ -20,15 +20,20 @@ export async function GET() {
   `;
   const following = await sql`
     select w.public_code, w.title, w.visibility, p.display_name as owner_name,
-      count(i.id)::int as item_count, w.updated_at,
+      count(i.id)::int as item_count,
+      count(i.id) filter (
+        where i.created_revision > coalesce(v.last_viewed_revision, w.items_revision)
+      )::int as new_item_count,
+      w.updated_at,
       case when ga.user_id is not null then 'convidado' else 'publica' end as access_type
     from wishlists w
     join profiles p on p.id = w.owner_id
     left join items i on i.wishlist_id = w.id
     left join followers f on f.wishlist_id = w.id and f.user_id = ${profile.id}
     left join guest_accesses ga on ga.wishlist_id = w.id and ga.user_id = ${profile.id} and ga.status = 'active'
+    left join wishlist_views v on v.wishlist_id = w.id and v.user_id = ${profile.id}
     where w.owner_id <> ${profile.id} and (f.user_id is not null or ga.user_id is not null)
-    group by w.id, p.display_name, ga.user_id
+    group by w.id, p.display_name, ga.user_id, v.last_viewed_revision
     order by w.updated_at desc
   `;
   return NextResponse.json({ profile, wishlist: mine[0] || null, following });

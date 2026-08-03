@@ -3,8 +3,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, ArrowUpRight, ChevronDown, Copy, Crown, Eye, EyeOff, Globe2, Home, MailPlus, Medal, MoreHorizontal, Plus, Search, Settings, Share2, SlidersHorizontal, Trash2, UserPlus, X } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { closestCenter, DndContext, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { ArrowLeft, ArrowUpRight, CircleMinus, Copy, Eye, EyeOff, Globe2, GripVertical, Home, MailPlus, Medal, MoreHorizontal, Pencil, Plus, Search, Settings, Share2, SlidersHorizontal, Trash2, UserPlus, X } from "lucide-react";
 import { api, ApiError } from "@/lib/client-api";
 import { useAuth } from "@/components/auth-provider";
 import { ItemForm } from "@/components/item-form";
@@ -19,9 +22,56 @@ const visibilityOptions = [
   { value: "invited", label: "Somente convidados", description: "Apenas pessoas convidadas acessam.", icon: UserPlus },
   { value: "private", label: "Somente eu", description: "A lista fica privada para você.", icon: EyeOff },
 ];
+const wishlistCache = new Map<string, any>();
 
 function visibilityLabel(value: string) {
   return visibilityOptions.find((option) => option.value === value)?.label || value;
+}
+
+function SortablePodiumItem({ item, position, onRemove }: { item: Item; position: 1 | 2 | 3; onRemove: (id: string) => void }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
+
+  return (
+    <article
+      className={`item-row podium-edit-item${isDragging ? " dragging" : ""}`}
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition }}
+    >
+      {item.image_url
+        ? <Image className="item-row-image" src={item.image_url} alt="" width={88} height={88} unoptimized />
+        : <div className="item-row-image" />}
+      <div className="item-row-copy">
+        <div className="item-row-title-line">
+          <strong className="item-row-title" title={item.name}>{item.name}</strong>
+          <span className={`podium-badge podium-badge-${position}`} aria-label={`${position}º lugar no pódio`}>
+            <Medal size={15} aria-hidden />{position}º
+          </span>
+        </div>
+        {item.domain && <span className="muted">{item.domain}</span>}
+      </div>
+      <div className="podium-edit-item-actions">
+        <button
+          className="icon-button danger"
+          type="button"
+          title="Remover do pódio"
+          aria-label={`Remover ${item.name} do pódio`}
+          onClick={() => onRemove(item.id)}
+        >
+          <CircleMinus size={19} aria-hidden />
+        </button>
+        <button
+          className="icon-button podium-drag-handle"
+          type="button"
+          title={`Arrastar ${item.name}`}
+          aria-label={`Arrastar ${item.name} para outra posição`}
+          {...attributes}
+          {...listeners}
+        >
+          <GripVertical size={20} aria-hidden />
+        </button>
+      </div>
+    </article>
+  );
 }
 
 function ContentNotFound() {
@@ -64,10 +114,12 @@ function ContentLoadError({ status, onRetry }: { status?: number; onRetry: () =>
 
 export default function PublicWishlistPage() {
   const { code } = useParams<{ code: string }>();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const pendingAction = searchParams.get("action");
+  const highlightedNewItemId = searchParams.get("novo");
+  const cacheKey = `${code}:${user?.uid ?? "guest"}`;
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState<{ status?: number } | null>(null);
   const [showItemForm, setShowItemForm] = useState(false);
@@ -80,24 +132,165 @@ export default function PublicWishlistPage() {
   const [showSearch, setShowSearch] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
+  const [isEditingPodium, setIsEditingPodium] = useState(false);
+  const [isSavingPodium, setIsSavingPodium] = useState(false);
+  const [podiumDraft, setPodiumDraft] = useState<Item[]>([]);
   const [itemView, setItemView] = useState<ItemView>("grouped");
   const [itemOrder, setItemOrder] = useState<ItemOrder>("newest");
   const [storeFilter, setStoreFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [newItemIds, setNewItemIds] = useState<Set<string>>(new Set());
+  const [viewedNewItemIds, setViewedNewItemIds] = useState<Set<string>>(new Set());
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [refreshError, setRefreshError] = useState("");
+  const [pendingViewRevision, setPendingViewRevision] = useState<number | null>(null);
   const shareMenuRef = useRef<HTMLDivElement>(null);
   const listControlsRef = useRef<HTMLDivElement>(null);
+  const itemListRef = useRef<HTMLElement>(null);
   const pendingActionHandledRef = useRef(false);
+  const dataRef = useRef<any>(null);
+  const requestRef = useRef(0);
+  const requestControllerRef = useRef<AbortController | null>(null);
+  const highlightedItemRef = useRef(highlightedNewItemId);
+  const requestedHighlightRef = useRef<string | null>(null);
+  const scrolledHighlightRef = useRef<string | null>(null);
+  const acknowledgedRevisionRef = useRef(0);
+  highlightedItemRef.current = highlightedNewItemId;
+  const podiumSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
 
-  async function load() {
+  const load = useCallback(async () => {
+    const requestId = requestRef.current + 1;
+    requestRef.current = requestId;
+    requestControllerRef.current?.abort();
+    const controller = new AbortController();
+    requestControllerRef.current = controller;
+    const hadData = Boolean(dataRef.current);
     setError(null);
-    setData(null);
-    try { setData(await api(`/api/wishlist/${code}`)); }
-    catch (loadError) {
-      setError(loadError instanceof ApiError ? { status: loadError.status } : {});
+    setRefreshError("");
+    setIsRefreshing(hadData);
+    try {
+      const nextData = await api(`/api/wishlist/${code}`, { signal: controller.signal });
+      if (requestRef.current !== requestId || controller.signal.aborted) return;
+      dataRef.current = nextData;
+      wishlistCache.set(cacheKey, nextData);
+      setData(nextData);
+      setNewItemIds((current) => {
+        const next = new Set(current);
+        for (const item of nextData.items as Item[]) {
+          if (item.is_new || item.id === highlightedItemRef.current) next.add(item.id);
+        }
+        return next;
+      });
+      setPendingViewRevision(nextData.tracksUpdates ? Number(nextData.viewRevision) : null);
     }
-  }
+    catch (loadError) {
+      if (controller.signal.aborted || requestRef.current !== requestId) return;
+      if (dataRef.current) {
+        setRefreshError("Não foi possível atualizar a wishlist agora. Os dados exibidos foram mantidos.");
+      } else {
+        setError(loadError instanceof ApiError ? { status: loadError.status } : {});
+      }
+    } finally {
+      if (requestRef.current === requestId) setIsRefreshing(false);
+    }
+  }, [cacheKey, code]);
 
-  useEffect(() => { load(); }, [code, user]);
+  useEffect(() => {
+    if (authLoading) return;
+    requestControllerRef.current?.abort();
+    requestRef.current += 1;
+    const cachedData = wishlistCache.get(cacheKey) ?? null;
+    dataRef.current = cachedData;
+    setData(cachedData);
+    setError(null);
+    setRefreshError("");
+    setNewItemIds(new Set());
+    setViewedNewItemIds(new Set());
+    setPendingViewRevision(null);
+    acknowledgedRevisionRef.current = 0;
+    requestedHighlightRef.current = null;
+    scrolledHighlightRef.current = null;
+    load();
+    return () => requestControllerRef.current?.abort();
+  }, [authLoading, cacheKey, code, load, user?.uid]);
+
+  useEffect(() => {
+    const revision = pendingViewRevision ?? -1;
+    if (revision < 0 || acknowledgedRevisionRef.current >= revision) return;
+    let cancelled = false;
+    let frame = 0;
+    let observer: IntersectionObserver | null = null;
+
+    function acknowledgeVisibleRevision() {
+      if (cancelled || document.visibilityState !== "visible" || !itemListRef.current) return;
+      acknowledgedRevisionRef.current = revision;
+      frame = window.requestAnimationFrame(() => {
+        api(`/api/follow/${code}`, {
+          method: "PATCH",
+          body: JSON.stringify({ viewRevision: revision }),
+        }).then(() => {
+          window.dispatchEvent(new Event("notifications:refresh"));
+        }).catch(() => {
+          if (!cancelled) acknowledgedRevisionRef.current = Math.max(revision - 1, 0);
+        });
+      });
+    }
+
+    function observeItemList() {
+      if (cancelled || document.visibilityState !== "visible" || !itemListRef.current) return;
+      observer?.disconnect();
+      observer = new IntersectionObserver((entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          observer?.disconnect();
+          acknowledgeVisibleRevision();
+        }
+      }, { threshold: 0.01 });
+      observer.observe(itemListRef.current);
+    }
+
+    observeItemList();
+    document.addEventListener("visibilitychange", observeItemList);
+    return () => {
+      cancelled = true;
+      observer?.disconnect();
+      window.cancelAnimationFrame(frame);
+      document.removeEventListener("visibilitychange", observeItemList);
+    };
+  }, [code, pendingViewRevision]);
+
+  useEffect(() => {
+    if (!highlightedNewItemId || !data) return;
+    const targetKey = `${code}:${highlightedNewItemId}`;
+    const targetExists = data.items.some((item: Item) => item.id === highlightedNewItemId);
+    if (!targetExists) {
+      if (requestedHighlightRef.current !== targetKey) {
+        requestedHighlightRef.current = targetKey;
+        load();
+      }
+      return;
+    }
+
+    setNewItemIds((current) => new Set(current).add(highlightedNewItemId));
+    if (scrolledHighlightRef.current === targetKey) return;
+    scrolledHighlightRef.current = targetKey;
+    window.requestAnimationFrame(() => {
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      document.getElementById(`wishlist-item-${highlightedNewItemId}`)
+        ?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
+    });
+  }, [code, data, highlightedNewItemId, load]);
+
+  const updateData = useCallback((updater: (current: any) => any) => {
+    setData((current: any) => {
+      const next = updater(current);
+      dataRef.current = next;
+      if (next) wishlistCache.set(cacheKey, next);
+      return next;
+    });
+  }, [cacheKey]);
 
   useEffect(() => {
     if (
@@ -115,7 +308,7 @@ export default function PublicWishlistPage() {
       try {
         if (!data.following) {
           await api(`/api/follow/${code}`, { method: "POST" });
-          await load();
+          updateData((current) => current ? { ...current, following: true, tracksUpdates: true } : current);
         }
         router.replace(`/w/${code}`);
       } catch {
@@ -124,7 +317,7 @@ export default function PublicWishlistPage() {
     }
 
     followAfterAuthentication();
-  }, [code, data, pendingAction, router, user]);
+  }, [code, data, pendingAction, router, updateData, user]);
 
   useEffect(() => {
     if (!showShareMenu && !showVisibilityMenu) return;
@@ -163,10 +356,45 @@ export default function PublicWishlistPage() {
       router.push(`/login?next=${encodeURIComponent(nextPath)}`);
       return;
     }
-    await fn(); await load();
+    await fn();
+  }
+
+  async function toggleFollowing() {
+    const wasFollowing = Boolean(data.following);
+    updateData((current) => current ? { ...current, following: !wasFollowing } : current);
+    try {
+      await api(`/api/follow/${code}`, { method: wasFollowing ? "DELETE" : "POST" });
+      if (wasFollowing) {
+        setNewItemIds(new Set());
+        setViewedNewItemIds(new Set());
+      }
+      updateData((current) => current ? {
+        ...current,
+        tracksUpdates: !wasFollowing,
+      } : current);
+    } catch (followError) {
+      updateData((current) => current ? { ...current, following: wasFollowing } : current);
+      throw followError;
+    }
+  }
+
+  function handleItemSaved(item: Item) {
+    setShowItemForm(false);
+    updateData((current) => current ? {
+      ...current,
+      wishlist: {
+        ...current.wishlist,
+        items_revision: Math.max(Number(current.wishlist.items_revision) || 0, Number(item.created_revision)),
+      },
+      items: [{ ...item, reserved: false, reserved_by_me: false, is_new: false }, ...current.items],
+      viewRevision: Math.max(Number(current.viewRevision) || 0, Number(item.created_revision)),
+    } : current);
   }
 
   function toggleItem(id: string) {
+    if (expandedItemId !== id) {
+      setViewedNewItemIds((current) => new Set(current).add(id));
+    }
     setExpandedItemId((current) => current === id ? null : id);
   }
 
@@ -177,8 +405,8 @@ export default function PublicWishlistPage() {
 
   async function changeVisibility(visibility: string) {
     setShowVisibilityMenu(false);
-    await api("/api/wishlist", { method: "PATCH", body: JSON.stringify({ title: data.wishlist.title, visibility }) });
-    await load();
+    const response = await api("/api/wishlist", { method: "PATCH", body: JSON.stringify({ title: data.wishlist.title, visibility }) });
+    updateData((current) => current ? { ...current, wishlist: response.wishlist } : current);
   }
 
   async function invite() {
@@ -201,15 +429,101 @@ export default function PublicWishlistPage() {
     window.setTimeout(() => setShareCopied(false), 1800);
   }
 
-  async function reserve(id: string) { await api(`/api/items/${id}/reserve`, { method: "POST" }); }
-  async function unreserve(id: string) { await api(`/api/items/${id}/reserve`, { method: "DELETE" }); }
+  async function reserve(id: string) {
+    await api(`/api/items/${id}/reserve`, { method: "POST" });
+    updateData((current) => current ? {
+      ...current,
+      items: current.items.map((item: Item) => item.id === id ? { ...item, reserved: true, reserved_by_me: true } : item),
+    } : current);
+  }
+  async function unreserve(id: string) {
+    await api(`/api/items/${id}/reserve`, { method: "DELETE" });
+    updateData((current) => current ? {
+      ...current,
+      items: current.items.map((item: Item) => item.id === id ? { ...item, reserved: false, reserved_by_me: false } : item),
+    } : current);
+  }
   async function setPodiumPosition(id: string, position: 1 | 2 | 3 | null) {
     await api(`/api/items/${id}/podium`, { method: "PATCH", body: JSON.stringify({ position }) });
-    await load();
+    updateData((current) => {
+      if (!current) return current;
+      const previousPosition = current.items.find((item: Item) => item.id === id)?.podium_position ?? null;
+      return {
+        ...current,
+        items: current.items.map((item: Item) => {
+          if (item.id === id) return { ...item, podium_position: position };
+          if (position === null && previousPosition && item.podium_position && item.podium_position > previousPosition) {
+            return { ...item, podium_position: (item.podium_position - 1) as 1 | 2 | 3 };
+          }
+          return item;
+        }),
+      };
+    });
+  }
+
+  function startPodiumEditing() {
+    const items = data.items
+      .filter((item: Item) => item.podium_position && !item.reserved)
+      .sort((first: Item, second: Item) => (first.podium_position || 0) - (second.podium_position || 0));
+
+    setItemView("grouped");
+    setStoreFilter("all");
+    setSearchQuery("");
+    setShowSearch(false);
+    setPodiumDraft(items);
+    setIsEditingPodium(true);
+  }
+
+  function cancelPodiumEditing() {
+    setPodiumDraft([]);
+    setIsEditingPodium(false);
+  }
+
+  function handlePodiumDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    setPodiumDraft((items) => {
+      const previousIndex = items.findIndex((item) => item.id === active.id);
+      const nextIndex = items.findIndex((item) => item.id === over.id);
+      return arrayMove(items, previousIndex, nextIndex);
+    });
+  }
+
+  async function savePodiumOrder() {
+    setIsSavingPodium(true);
+    try {
+      await api(`/api/wishlist/${code}/podium`, {
+        method: "PATCH",
+        body: JSON.stringify({ itemIds: podiumDraft.map((item) => item.id) }),
+      });
+      const positions = new Map(podiumDraft.map((item, index) => [item.id, (index + 1) as 1 | 2 | 3]));
+      updateData((current) => current ? {
+        ...current,
+        items: current.items.map((item: Item) => ({
+          ...item,
+          podium_position: positions.get(item.id) ?? null,
+        })),
+      } : current);
+      setIsEditingPodium(false);
+      setPodiumDraft([]);
+    } finally {
+      setIsSavingPodium(false);
+    }
   }
   async function remove(id: string) {
     if (confirm("Excluir este item definitivamente?")) {
-      await api(`/api/items/${id}`, { method: "DELETE" }); await load();
+      await api(`/api/items/${id}`, { method: "DELETE" });
+      updateData((current) => current ? {
+        ...current,
+        items: current.items.filter((item: Item) => item.id !== id),
+      } : current);
+      setNewItemIds((current) => {
+        const next = new Set(current);
+        next.delete(id);
+        return next;
+      });
+      if (expandedItemId === id) setExpandedItemId(null);
     }
   }
 
@@ -227,6 +541,15 @@ export default function PublicWishlistPage() {
     return matchesStore && matchesStatus;
   });
   const orderedItems = [...filteredItems].sort((first: Item, second: Item) => {
+    const firstPodiumPosition = first.podium_position;
+    const secondPodiumPosition = second.podium_position;
+
+    if (firstPodiumPosition || secondPodiumPosition) {
+      if (!firstPodiumPosition) return 1;
+      if (!secondPodiumPosition) return -1;
+      return firstPodiumPosition - secondPodiumPosition;
+    }
+
     if (itemOrder === "name-asc" || itemOrder === "name-desc") {
       const comparison = first.name.localeCompare(second.name, "pt-BR", { sensitivity: "base", numeric: true });
       return itemOrder === "name-asc" ? comparison : -comparison;
@@ -235,14 +558,16 @@ export default function PublicWishlistPage() {
     const comparison = new Date(second.created_at).getTime() - new Date(first.created_at).getTime();
     return itemOrder === "newest" ? comparison : -comparison;
   });
-  const sortedItems = searchItems(orderedItems, searchQuery);
+  const sortedItems = searchItems(orderedItems, searchQuery).sort((first: Item, second: Item) => {
+    if (!first.podium_position && !second.podium_position) return 0;
+    if (!first.podium_position) return 1;
+    if (!second.podium_position) return -1;
+    return first.podium_position - second.podium_position;
+  });
   const availableItems = sortedItems.filter((item: Item) => !item.reserved);
   const reservedItems = sortedItems.filter((item: Item) => item.reserved);
-  const podiumItems = ([1, 2, 3] as const).map((position) => ({
-    position,
-    item: data.items.find((item: Item) => item.podium_position === position) as Item | undefined,
-  }));
-  const podiumItemCount = podiumItems.filter(({ item }) => item).length;
+  const occupiedPodiumPositions = new Set(data.items.map((item: Item) => item.podium_position).filter(Boolean));
+  const nextPodiumPosition = ([1, 2, 3] as const).find((position) => !occupiedPodiumPositions.has(position)) ?? null;
 
   const activeControlCount = Number(itemView !== "grouped") + Number(itemOrder !== "newest") + Number(storeFilter !== "all");
   const emptyItemsMessage = searchQuery.trim() ? "Nenhum item corresponde à busca." : "Nenhum item corresponde aos filtros.";
@@ -264,31 +589,30 @@ export default function PublicWishlistPage() {
       document.querySelector<HTMLElement>(".item-form")?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
     }, 0);
   }
-  function openPodiumItem(id: string) {
-    setItemView("grouped");
-    setStoreFilter("all");
-    setSearchQuery("");
-    setExpandedItemId(id);
-    window.setTimeout(() => {
-      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      document.getElementById(`wishlist-item-${id}`)?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
-    }, 0);
-  }
   function renderItem(item: Item) {
     const expanded = expandedItemId === item.id;
     const hasDescription = Boolean(item.description);
     const hasExpandedDetails = hasDescription || expanded;
     const detailsId = `item-details-${item.id}`;
+    const isNew = !viewedNewItemIds.has(item.id) && newItemIds.has(item.id);
 
     return (
       <article
-        className={`item-row${expanded ? " expanded" : ""}`}
+        className={`item-row${expanded ? " expanded" : ""}${isNew ? " new" : ""}`}
         id={`wishlist-item-${item.id}`}
         key={item.id}
       >
+        {isNew && <span className="badge item-new-badge">NOVO</span>}
         {item.image_url ? <Image className="item-row-image" src={item.image_url} alt="" width={88} height={88} unoptimized /> : <div className="item-row-image" />}
         <div className="item-row-copy">
-          <strong className="item-row-title" title={item.name}>{item.name}</strong>
+          <div className="item-row-title-line">
+            <strong className="item-row-title" title={item.name}>{item.name}</strong>
+            {item.podium_position && (
+              <span className={`podium-badge podium-badge-${item.podium_position}`} aria-label={`${item.podium_position}º lugar no pódio`}>
+                <Medal size={15} aria-hidden />{item.podium_position}º
+              </span>
+            )}
+          </div>
           {item.domain && <span className="muted">{item.domain}</span>}
           {expanded && <span className={`badge item-status ${item.reserved ? "reserved" : "available"} item-row-copy-status`}>{item.reserved_by_me ? "Seu" : item.reserved ? "Reservado" : "Disponível"}</span>}
         </div>
@@ -304,26 +628,22 @@ export default function PublicWishlistPage() {
           <div className="item-row-details" id={detailsId}>
             {hasDescription && <p>{item.description}</p>}
             {data.isOwner && (
-              <div className="podium-picker" aria-label={`Definir prioridade de ${item.name}`}>
-                <span>Prioridade</span>
-                <div className="podium-picker-actions">
-                  {([1, 2, 3] as const).map((position) => (
-                    <button
-                      className={`button compact${item.podium_position === position ? " podium-selected" : ""}`}
-                      type="button"
-                      aria-pressed={item.podium_position === position}
-                      onClick={() => setPodiumPosition(item.id, position)}
-                      key={position}
-                    >
-                      <Medal size={16} aria-hidden />Top {position}
-                    </button>
-                  ))}
-                  {item.podium_position && (
-                    <button className="button compact" type="button" onClick={() => setPodiumPosition(item.id, null)}>
-                      Remover do pódio
-                    </button>
-                  )}
-                </div>
+              <div className="podium-action">
+                {item.podium_position ? (
+                  <button className="button compact" type="button" onClick={() => setPodiumPosition(item.id, null)}>
+                    <Medal size={16} aria-hidden />Remover do pódio
+                  </button>
+                ) : (
+                  <button
+                    className="button compact"
+                    type="button"
+                    disabled={item.reserved || nextPodiumPosition === null}
+                    title={item.reserved ? "Apenas itens disponíveis podem entrar no pódio" : nextPodiumPosition === null ? "O pódio já está completo" : undefined}
+                    onClick={() => nextPodiumPosition && setPodiumPosition(item.id, nextPodiumPosition)}
+                  >
+                    <Medal size={16} aria-hidden />{nextPodiumPosition === null ? "Pódio completo" : "Adicionar ao pódio"}
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -344,7 +664,8 @@ export default function PublicWishlistPage() {
   }
 
   return (
-    <main className="page stack wishlist-page">
+    <main className="page stack wishlist-page" aria-busy={isRefreshing}>
+      {isRefreshing && <span className="sr-only" role="status">Atualizando wishlist.</span>}
       <div className="wishlist-topbar">
         <Link className="icon-button page-nav-button" href={user ? "/painel" : "/"} title={user ? "Voltar ao painel" : "Voltar para a página inicial"} aria-label={user ? "Voltar ao painel" : "Voltar para a página inicial"}>
           <ArrowLeft size={18} aria-hidden />
@@ -355,7 +676,7 @@ export default function PublicWishlistPage() {
               <div className="menu-wrap">
                 <button className="icon-button" title="Compartilhar" aria-label="Compartilhar" aria-expanded={showShareMenu} aria-controls="share-menu" onClick={toggleShareMenu}><Share2 size={18} aria-hidden /></button>
                 {showShareMenu && (
-                  <div className="dropdown-menu share-menu wishlist-topbar-menu" id="share-menu" role="menu">
+                  <div className="dropdown-menu share-menu wishlist-topbar-menu dropdown-menu-viewport-centered" id="share-menu" role="menu">
                     <strong>Compartilhar wishlist</strong>
                     <div className="share-link-plain">{shareUrl}</div>
                     <button className="menu-option" onClick={copyShareLink} role="menuitem">
@@ -373,7 +694,7 @@ export default function PublicWishlistPage() {
               <div className="menu-wrap">
                 <button className="icon-button" title="Alterar visibilidade" aria-label="Alterar visibilidade" aria-expanded={showVisibilityMenu} onClick={() => { setShowVisibilityMenu((value) => !value); setShowShareMenu(false); }}><Eye size={18} aria-hidden /></button>
                 {showVisibilityMenu && (
-                  <div className="dropdown-menu visibility-menu wishlist-topbar-menu" role="menu">
+                  <div className="dropdown-menu visibility-menu wishlist-topbar-menu dropdown-menu-viewport-centered" role="menu">
                     <strong>Escolha a visibilidade da lista</strong>
                     {visibilityOptions.map((option) => {
                       const Icon = option.icon;
@@ -392,9 +713,7 @@ export default function PublicWishlistPage() {
             </div>
           )}
           {!data.isOwner && data.wishlist.visibility === "public" && (
-            <button className="button" onClick={() => authAction(async () => {
-              await api(`/api/follow/${code}`, { method: data.following ? "DELETE" : "POST" });
-            }, data.following ? undefined : "follow")}>{data.following ? "Deixar de seguir" : "Seguir"}</button>
+            <button className="button" onClick={() => authAction(toggleFollowing, data.following ? undefined : "follow")}>{data.following ? "Deixar de seguir" : "Seguir"}</button>
           )}
         </div>
       </div>
@@ -406,53 +725,7 @@ export default function PublicWishlistPage() {
         </p>
       </header>
 
-      {podiumItemCount > 0 && (
-        <details className="podium">
-        <summary className="podium-summary">
-          <span className="podium-summary-icon"><Crown size={20} aria-hidden /></span>
-          <span className="podium-heading">
-            <strong>Mais desejados</strong>
-            <span className="muted">
-              {`${podiumItemCount} ${podiumItemCount === 1 ? "item em destaque" : "itens em destaque"}`}
-            </span>
-          </span>
-          <ChevronDown className="podium-chevron" size={20} aria-hidden />
-        </summary>
-        <div className="podium-content">
-          <p className="muted podium-intro">As três maiores prioridades desta lista.</p>
-          <div className="podium-list">
-            {podiumItems.map(({ position, item }) => (
-              <button
-                className={`podium-item podium-position-${position}${item ? "" : " empty"}`}
-                type="button"
-                disabled={!item}
-                onClick={() => item && openPodiumItem(item.id)}
-                aria-label={item ? `Abrir ${item.name} na lista` : `Top ${position} ainda não definido`}
-                key={position}
-              >
-                <span className="podium-rank" aria-label={`${position}º lugar`}>{position}</span>
-                {item ? (
-                  <>
-                    {item.image_url
-                      ? <Image className="podium-image" src={item.image_url} alt="" width={72} height={72} unoptimized />
-                      : <div className="podium-image podium-image-placeholder"><Medal size={24} aria-hidden /></div>}
-                    <div className="podium-copy">
-                      <strong title={item.name}>{item.name}</strong>
-                      {item.domain && <span className="muted">{item.domain}</span>}
-                    </div>
-                  </>
-                ) : (
-                  <div className="podium-empty-copy">
-                    <strong>Top {position}</strong>
-                    <span>{data.isOwner ? "Abra um item e escolha esta posição." : "Posição ainda não definida."}</span>
-                  </div>
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
-        </details>
-      )}
+      {refreshError && <p className="error" role="status">{refreshError}</p>}
 
       {data.isOwner && showInviteModal && (
         <div className="modal-backdrop" role="presentation" onClick={() => setShowInviteModal(false)}>
@@ -474,11 +747,11 @@ export default function PublicWishlistPage() {
         </div>
       )}
 
-      <section className="item-list" aria-label="Itens da wishlist">
+      <section className="item-list" aria-label="Itens da wishlist" ref={itemListRef}>
         {data.isOwner && !showItemForm && (
           <button className="button primary add-item-inline" onClick={openItemForm}><Plus size={18} aria-hidden />Adicionar item</button>
         )}
-        {data.isOwner && showItemForm && <ItemForm onCancel={() => setShowItemForm(false)} onSaved={() => { setShowItemForm(false); load(); }} />}
+        {data.isOwner && showItemForm && <ItemForm onCancel={() => setShowItemForm(false)} onSaved={handleItemSaved} />}
         {data.items.length === 0 ? (
           <div className="empty">Esta wishlist ainda não possui itens.</div>
         ) : (
@@ -509,7 +782,7 @@ export default function PublicWishlistPage() {
                       <SlidersHorizontal size={18} aria-hidden />
                     </button>
                     {showListControls && (
-                      <div className="dropdown-menu wishlist-list-controls" id="wishlist-list-controls" role="dialog" aria-label="Filtrar e ordenar itens">
+                      <div className="dropdown-menu wishlist-list-controls dropdown-menu-viewport-centered" id="wishlist-list-controls" role="dialog" aria-label="Filtrar e ordenar itens">
                         <label className="field">
                           <span>Ordenar por</span>
                           <select className="select" value={itemOrder} onChange={(event) => setItemOrder(event.target.value as ItemOrder)}>
@@ -561,21 +834,68 @@ export default function PublicWishlistPage() {
                 </div>
               )}
             </div>
-            {itemSections.map((section) => (
-              <section className="wishlist-item-group" aria-label={section.id === "available-items" ? "Itens disponíveis" : undefined} aria-labelledby={section.id !== "available-items" ? `${section.id}-title` : undefined} key={section.id}>
-                {section.id !== "available-items" && (
-                  <div className="wishlist-item-group-heading">
-                    <h2 id={`${section.id}-title`}>{section.title}</h2>
-                    <span>{section.items.length}</span>
+            {itemSections.map((section) => {
+              const sectionPodiumItems = section.items.filter((item: Item) => item.podium_position && !item.reserved);
+              const sectionRegularItems = section.items.filter((item: Item) => !item.podium_position || item.reserved);
+              const editingThisPodium = isEditingPodium && section.id === "available-items";
+              const displayedPodiumItems = editingThisPodium ? podiumDraft : sectionPodiumItems;
+
+              return (
+                <section className="wishlist-item-group" aria-label={section.id === "available-items" ? "Itens disponíveis" : undefined} aria-labelledby={section.id !== "available-items" ? `${section.id}-title` : undefined} key={section.id}>
+                  {section.id !== "available-items" && (
+                    <div className="wishlist-item-group-heading">
+                      <h2 id={`${section.id}-title`}>{section.title}</h2>
+                      <span>{section.items.length}</span>
+                    </div>
+                  )}
+                  <div className="wishlist-item-group-list">
+                    {(displayedPodiumItems.length > 0 || editingThisPodium) && (
+                      <section className={`podium-group${editingThisPodium ? " editing" : ""}`} aria-labelledby={`${section.id}-podium-title`}>
+                        <div className="podium-group-heading">
+                          <h2 id={`${section.id}-podium-title`}>Mais desejados</h2>
+                          {data.isOwner && !editingThisPodium && (
+                            <button className="icon-button podium-edit-button" type="button" title="Editar pódio" aria-label="Editar pódio" onClick={startPodiumEditing}>
+                              <Pencil size={17} aria-hidden />
+                            </button>
+                          )}
+                        </div>
+                        {editingThisPodium ? (
+                          <>
+                            <DndContext sensors={podiumSensors} collisionDetection={closestCenter} onDragEnd={handlePodiumDragEnd}>
+                              <SortableContext items={podiumDraft.map((item) => item.id)} strategy={verticalListSortingStrategy}>
+                                <div className="podium-group-items">
+                                  {podiumDraft.map((item, index) => (
+                                    <SortablePodiumItem
+                                      item={item}
+                                      position={(index + 1) as 1 | 2 | 3}
+                                      onRemove={(id) => setPodiumDraft((items) => items.filter((draftItem) => draftItem.id !== id))}
+                                      key={item.id}
+                                    />
+                                  ))}
+                                </div>
+                              </SortableContext>
+                            </DndContext>
+                            <div className="podium-edit-footer">
+                              <button className="button primary compact" type="button" disabled={isSavingPodium} onClick={savePodiumOrder}>
+                                {isSavingPodium ? "Salvando..." : "Salvar"}
+                              </button>
+                              <button className="button compact" type="button" disabled={isSavingPodium} onClick={cancelPodiumEditing}>Cancelar</button>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="podium-group-items">
+                            {displayedPodiumItems.map(renderItem)}
+                          </div>
+                        )}
+                      </section>
+                    )}
+                    {sectionRegularItems.length > 0
+                      ? sectionRegularItems.map(renderItem)
+                      : displayedPodiumItems.length === 0 && !editingThisPodium && <p className="wishlist-item-group-empty">{emptyItemsMessage}</p>}
                   </div>
-                )}
-                <div className="wishlist-item-group-list">
-                  {section.items.length > 0
-                    ? section.items.map(renderItem)
-                    : <p className="wishlist-item-group-empty">{emptyItemsMessage}</p>}
-                </div>
-              </section>
-            ))}
+                </section>
+              );
+            })}
           </>
         )}
       </section>

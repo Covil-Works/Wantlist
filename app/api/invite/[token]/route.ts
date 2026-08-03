@@ -3,6 +3,17 @@ import { sql } from "@/lib/db";
 import { requireProfile } from "@/lib/auth";
 import { hashToken } from "@/lib/random";
 
+async function ensureViewState(userId: string, wishlistId: string) {
+  await sql`
+    insert into wishlist_views (user_id, wishlist_id, last_viewed_revision)
+    select ${userId}, w.id, w.items_revision
+    from wishlists w
+    join guest_accesses ga on ga.wishlist_id = w.id and ga.user_id = ${userId} and ga.status = 'active'
+    where w.id = ${wishlistId}
+    on conflict (user_id, wishlist_id) do nothing
+  `;
+}
+
 export async function GET(_: Request, { params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   const rows = await sql`
@@ -40,6 +51,7 @@ export async function POST(_: Request, { params }: { params: Promise<{ token: st
       limit 1
     `;
     invite = existing[0];
+    if (invite) await ensureViewState(profile.id, invite.wishlist_id);
     if (!invite) return NextResponse.json({ error: "Convite inválido." }, { status: 404 });
     if (invite.status === "accepted" && invite.accepted_by === profile.id) {
       if (invite.guest_status === "active") return NextResponse.json({ ok: true, code: invite.public_code });
@@ -49,6 +61,7 @@ export async function POST(_: Request, { params }: { params: Promise<{ token: st
         values (${profile.id}, ${invite.wishlist_id}, 'active')
         on conflict (user_id, wishlist_id) do nothing
       `;
+      await ensureViewState(profile.id, invite.wishlist_id);
       return NextResponse.json({ ok: true, code: invite.public_code });
     }
     return NextResponse.json({ error: "Este convite não está mais disponível." }, { status: 400 });
@@ -59,6 +72,7 @@ export async function POST(_: Request, { params }: { params: Promise<{ token: st
     values (${profile.id}, ${invite.wishlist_id}, 'active')
     on conflict (user_id, wishlist_id) do update set status = 'active', granted_at = now()
   `;
+  await ensureViewState(profile.id, invite.wishlist_id);
 
   const rows = await sql`
     select w.public_code, ga.status as guest_status

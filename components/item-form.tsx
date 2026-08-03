@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ImageOff, Loader2, X } from "lucide-react";
 import { api } from "@/lib/client-api";
+import type { Item } from "@/lib/types";
 import { normalizeProductUrl } from "@/lib/product-metadata/services/normalize-product-url";
 import { resolveProductName } from "@/lib/product-url";
 
@@ -25,7 +26,7 @@ function statusMessage(state: ExtractionState) {
   return "";
 }
 
-export function ItemForm({ onSaved, onCancel }: { onSaved: () => void; onCancel?: () => void }) {
+export function ItemForm({ onSaved, onCancel }: { onSaved: (item: Item) => void; onCancel?: () => void }) {
   const [originalUrl, setOriginalUrl] = useState("");
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -132,7 +133,7 @@ export function ItemForm({ onSaved, onCancel }: { onSaved: () => void; onCancel?
       });
       setMessage(data.duplicate ? "Item salvo. Aviso: essa URL já existia na wishlist." : "Item salvo.");
       setOriginalUrl(""); setName(""); setDescription(""); setImageUrl(""); setWithoutUrl(false); setShowDescription(false); setExtractionState("idle");
-      onSaved();
+      onSaved(data.item as Item);
     } catch (err) { setError(err instanceof Error ? err.message : "Erro ao salvar."); }
   }
 
